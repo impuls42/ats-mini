@@ -1,0 +1,17 @@
+Metadata-Version: 2.4
+Name: ats-mini
+Version: 0.0
+Requires-Python: >=3.12
+License-File: LICENSE
+Requires-Dist: towncrier
+Requires-Dist: pre-commit
+Requires-Dist: sphinx
+Requires-Dist: furo
+Requires-Dist: myst_parser
+Requires-Dist: sphinx-autobuild
+Provides-Extra: rpc
+Requires-Dist: pytest; extra == "rpc"
+Requires-Dist: cbor2; extra == "rpc"
+Requires-Dist: pyserial; extra == "rpc"
+Requires-Dist: websockets; extra == "rpc"
+Dynamic: license-file

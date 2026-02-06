@@ -270,6 +270,10 @@ void setup()
 
   // Start Bluetooth LE, if necessary
   bleInit(bleModeIdx);
+
+  // Initialize remote timers
+  remoteSerialState.remoteTimer = millis();
+  remoteBLEState.remoteTimer = millis();
 }
 
 
@@ -976,6 +980,8 @@ void loop()
 
   // Tick NETWORK time, connecting to WiFi if requested
   netTickTime();
+  // Tick RPC events over WiFi if enabled
+  netRpcTickTime();
 
   // Run clock
   needRedraw |= clockTickTime();

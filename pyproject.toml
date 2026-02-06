@@ -12,6 +12,14 @@ dependencies = [
   "sphinx-autobuild",
 ]
 
+[project.optional-dependencies]
+rpc = [
+  "pytest",
+  "cbor2",
+  "pyserial",
+  "websockets",
+]
+
 [tool.uv]
 required-version = ">=0.6.8"
 

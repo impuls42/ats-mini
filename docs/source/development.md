@@ -46,6 +46,30 @@ You can do all of the above using the `make` command as well:
 HALF_STEP=1 PORT=/dev/tty.usbmodem14401 make upload
 ```
 
+## CBOR-RPC transport (optional)
+
+CBOR-RPC is an opt-in, framed binary protocol. Legacy terminal commands stay the default.
+
+### Serial/BLE activation
+
+Send the switch byte `0x1E` to activate CBOR-RPC mode for the connection. After switching, send length-prefixed CBOR frames:
+
+```text
+[4-byte big-endian length][CBOR payload]
+```
+
+### WebSocket
+
+When Wi-Fi is enabled, connect to `ws://atsmini.local/rpc` and send binary messages in the same length-prefixed format.
+
+### Baseline methods
+
+- `capabilities.get`
+- `volume.set` / `volume.get`
+- `log.toggle` / `log.get`
+- `events.subscribe` / `events.unsubscribe`
+- `screen.capture` (`binary` or `rle`)
+
 ## Decoding stack traces
 
 To decode a stack trace (printed via serial port) use the following tool: <https://esphome.github.io/esp-stacktrace-decoder/>

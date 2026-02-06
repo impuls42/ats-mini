@@ -5,6 +5,12 @@
 		},
 	],
 	"settings": {
-		"platformio-ide.disablePIOHomeStartup": true
+		"platformio-ide.disablePIOHomeStartup": true,
+		"chat.tools.terminal.autoApprove": {
+			"pio": true,
+			"~/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-addr2line": true,
+			".venv/bin/python3": true,
+			"pytest": true
+		}
 	}
 }

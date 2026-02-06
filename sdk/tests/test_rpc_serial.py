@@ -3,7 +3,7 @@ import time
 
 import pytest
 
-from atsmini_rpc.client import SerialRpcClient
+from ats_sdk.rpc import SerialRpcClient
 
 
 PORT = os.getenv("ATSMINI_PORT")

@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from atsmini_rpc.client import WebSocketRpcClient
+from ats_sdk.rpc import WebSocketRpcClient
 
 
 WS_URL = os.getenv("ATSMINI_WS_URL")

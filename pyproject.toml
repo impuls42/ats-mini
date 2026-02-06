@@ -13,12 +13,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-rpc = [
-  "pytest",
-  "cbor2",
-  "pyserial",
-  "websockets",
-]
+rpc = ["pytest", "cbor2", "pyserial", "websockets"]
+
+[project.scripts]
+atsmini-terminal = "atsmini_rpc.terminal:main"
 
 [tool.uv]
 required-version = ">=0.6.8"

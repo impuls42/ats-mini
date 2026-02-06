@@ -11,6 +11,16 @@ from .framing import SWITCH_BYTE, encode_frame, decode_frame
 class SerialRpcClient:
     def __init__(self, port: str, baudrate: int = 115200, timeout: float = 1.0) -> None:
         self.serial = serial.Serial(port, baudrate=baudrate, timeout=timeout)
+        # Assert DTR to enable Serial on ESP32-S3
+        self.serial.dtr = True
+        self.serial.rts = False
+        
+        # Brief settle time
+        time.sleep(0.1)
+        
+        # Flush any pending data
+        self.serial.reset_input_buffer()
+            
         self._next_id = 1
 
     def close(self) -> None:
@@ -18,6 +28,8 @@ class SerialRpcClient:
 
     def switch_mode(self) -> None:
         self.serial.write(bytes([SWITCH_BYTE]))
+        self.serial.flush()
+        time.sleep(0.1)
 
     def request(self, method: str, params: Optional[Dict[str, Any]] = None, request_id: Optional[int] = None) -> int:
         if request_id is None:
@@ -29,6 +41,7 @@ class SerialRpcClient:
             "params": params or {},
         }
         self.serial.write(encode_frame(cbor2.dumps(payload)))
+        self.serial.flush()
         return request_id
 
     def read_message(self, timeout: float = 3.0) -> Dict[str, Any]:

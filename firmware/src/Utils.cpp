@@ -19,11 +19,11 @@ static bool ssbLoaded = false;
 
 // Time
 static bool clockHasBeenSet = false;
-static uint32_t clockTimer  = 0;
+static uint32_t clockTimer = 0;
 static uint8_t clockSeconds = 0;
 static uint8_t clockMinutes = 0;
-static uint8_t clockHours   = 0;
-static char    clockText[8] = {0};
+static uint8_t clockHours = 0;
+static char clockText[8] = {0};
 
 //
 // Get firmware version and build time, as a string
@@ -33,14 +33,13 @@ const char *getVersion(bool shorter)
   static char versionString[35] = "\0";
 
   sprintf(versionString, "%s%sF/W: v%1.1d.%2.2d %s",
-    shorter ? "" : RECEIVER_NAME,
-    shorter ? "" : " ",
-    VER_APP / 100,
-    VER_APP % 100,
-    __DATE__
-  );
+          shorter ? "" : RECEIVER_NAME,
+          shorter ? "" : " ",
+          VER_APP / 100,
+          VER_APP % 100,
+          __DATE__);
 
-  return(versionString);
+  return (versionString);
 }
 
 //
@@ -50,21 +49,20 @@ const char *getMACAddress()
 {
   static char macString[20] = "\0";
 
-  if(!macString[0])
+  if (!macString[0])
   {
     uint64_t mac = ESP.getEfuseMac();
     sprintf(
-      macString,
-      "%02X:%02X:%02X:%02X:%02X:%02X",
-      (uint8_t)mac,
-      (uint8_t)(mac >> 8),
-      (uint8_t)(mac >> 16),
-      (uint8_t)(mac >> 24),
-      (uint8_t)(mac >> 32),
-      (uint8_t)(mac >> 40)
-    );
+        macString,
+        "%02X:%02X:%02X:%02X:%02X:%02X",
+        (uint8_t)mac,
+        (uint8_t)(mac >> 8),
+        (uint8_t)(mac >> 16),
+        (uint8_t)(mac >> 24),
+        (uint8_t)(mac >> 32),
+        (uint8_t)(mac >> 40));
   }
-  return(macString);
+  return (macString);
 }
 
 //
@@ -72,9 +70,10 @@ const char *getMACAddress()
 //
 void loadSSB(uint8_t bandwidth, bool draw)
 {
-  if(!ssbLoaded)
+  if (!ssbLoaded)
   {
-    if(draw) drawMessage("Loading SSB");
+    if (draw)
+      drawMessage("Loading SSB");
     rx.loadPatch(ssb_patch_content, sizeof(ssb_patch_content), bandwidth);
     ssbLoaded = true;
   }
@@ -105,57 +104,69 @@ bool muteOn(uint8_t mode, int x)
   bool unmute = false;
   bool mute = false;
 
-  if(x==1) {
+  if (x == 1)
+  {
     status = true;
-    switch(mode) {
+    switch (mode)
+    {
     case MUTE_FORCE:
       mute = true;
       break;
     case MUTE_MAIN:
-      if(!muted && !squelched) {
+      if (!muted && !squelched)
+      {
         mute = true;
       }
       muted = true;
       break;
     case MUTE_SQUELCH:
-      if(!muted && !squelched) {
+      if (!muted && !squelched)
+      {
         mute = true;
       }
       squelched = true;
       break;
     case MUTE_TEMP:
-      if(!muted && !squelched) {
+      if (!muted && !squelched)
+      {
         mute = true;
       }
       break;
     }
-  } else if(x==0) {
+  }
+  else if (x == 0)
+  {
     status = false;
-    switch(mode) {
+    switch (mode)
+    {
     case MUTE_FORCE:
       unmute = true;
       break;
     case MUTE_MAIN:
-      if(muted && !squelched) {
+      if (muted && !squelched)
+      {
         unmute = true;
       }
       muted = false;
       break;
     case MUTE_SQUELCH:
-      if(!muted && squelched) {
+      if (!muted && squelched)
+      {
         unmute = true;
       }
       squelched = false;
       break;
     case MUTE_TEMP:
-      if(!muted && !squelched) {
+      if (!muted && !squelched)
+      {
         unmute = true;
       }
       break;
     }
   }
 
-  if(mute) {
+  if (mute)
+  {
     // Disable audio amplifier to silence speaker
     digitalWrite(PIN_AMP_EN, LOW);
     // Activate the mute circuit
@@ -164,7 +175,8 @@ bool muteOn(uint8_t mode, int x)
     rx.setAudioMute(true);
   }
 
-  if(unmute) {
+  if (unmute)
+  {
     // Deactivate the mute circuit
     digitalWrite(AUDIO_MUTE, LOW);
     delay(50);
@@ -173,7 +185,8 @@ bool muteOn(uint8_t mode, int x)
     digitalWrite(PIN_AMP_EN, HIGH);
   }
 
-  switch(mode) {
+  switch (mode)
+  {
   case MUTE_MAIN:
     return muted;
   case MUTE_SQUELCH:
@@ -190,28 +203,29 @@ bool muteOn(uint8_t mode, int x)
 //
 bool sleepOn(int x)
 {
-  if((x==1) && !sleep_on)
+  if ((x == 1) && !sleep_on)
   {
     sleep_on = true;
-    ledcWrite(PIN_LCD_BL, 0);
+    ledcWrite(LCD_BL_CH, 0);
     spr.fillSprite(TFT_BLACK);
     spr.pushSprite(0, 0);
     tft.writecommand(ST7789_DISPOFF);
     tft.writecommand(ST7789_SLPIN);
 
     // Wait till the button is released to prevent immediate wakeup
-    while(pb1.update(digitalRead(ENCODER_PUSH_BUTTON) == LOW).isPressed)
+    while (pb1.update(digitalRead(ENCODER_PUSH_BUTTON) == LOW).isPressed)
       delay(100);
 
-    if(sleepModeIdx == SLEEP_LIGHT)
+    if (sleepModeIdx == SLEEP_LIGHT)
     {
       // Disable WiFi
       netStop();
 
       // Unmute squelch
-      if(muteOn(MUTE_SQUELCH) && !muteOn(MUTE_MAIN)) muteOn(MUTE_FORCE, false);
+      if (muteOn(MUTE_SQUELCH) && !muteOn(MUTE_MAIN))
+        muteOn(MUTE_FORCE, false);
 
-      while(true)
+      while (true)
       {
         esp_sleep_enable_ext0_wakeup((gpio_num_t)ENCODER_PUSH_BUTTON, LOW);
         rtc_gpio_pullup_en((gpio_num_t)ENCODER_PUSH_BUTTON);
@@ -219,48 +233,52 @@ bool sleepOn(int x)
         esp_light_sleep_start();
 
         // Waking up here
-        if(currentSleep) break; // Short click is enough to exit from sleep if timeout is enabled
+        if (currentSleep)
+          break; // Short click is enough to exit from sleep if timeout is enabled
 
         // Wait for a long press, otherwise enter the sleep again
         pb1.reset(); // Reset the button state (its timers could be stale due to CPU sleep)
 
         bool wasLongPressed = false;
-        while(true)
+        while (true)
         {
           ButtonTracker::State pb1st = pb1.update(digitalRead(ENCODER_PUSH_BUTTON) == LOW, 0);
           wasLongPressed |= pb1st.isLongPressed;
-          if(wasLongPressed || !pb1st.isPressed) break;
+          if (wasLongPressed || !pb1st.isPressed)
+            break;
           delay(100);
         }
 
-        if(wasLongPressed) break;
+        if (wasLongPressed)
+          break;
       }
       // Reenable the pin as well as the display
       rtc_gpio_pullup_dis((gpio_num_t)ENCODER_PUSH_BUTTON);
       rtc_gpio_pulldown_dis((gpio_num_t)ENCODER_PUSH_BUTTON);
       rtc_gpio_deinit((gpio_num_t)ENCODER_PUSH_BUTTON);
       pinMode(ENCODER_PUSH_BUTTON, INPUT_PULLUP);
-      if(muteOn(MUTE_SQUELCH) && !muteOn(MUTE_MAIN)) muteOn(MUTE_FORCE, true);
+      if (muteOn(MUTE_SQUELCH) && !muteOn(MUTE_MAIN))
+        muteOn(MUTE_FORCE, true);
       sleepOn(false);
       // Enable WiFi
       netInit(wifiModeIdx, false);
     }
   }
-  else if((x==0) && sleep_on)
+  else if ((x == 0) && sleep_on)
   {
     sleep_on = false;
     tft.writecommand(ST7789_SLPOUT);
     delay(120);
     tft.writecommand(ST7789_DISPON);
     drawScreen();
-    ledcWrite(PIN_LCD_BL, currentBrt);
+    ledcWrite(LCD_BL_CH, currentBrt);
     // Wait till the button is released to prevent the main loop clicks
     pb1.reset(); // Reset the button state (its timers could be stale due to CPU sleep)
-    while(pb1.update(digitalRead(ENCODER_PUSH_BUTTON) == LOW, 0).isPressed)
+    while (pb1.update(digitalRead(ENCODER_PUSH_BUTTON) == LOW, 0).isPressed)
       delay(100);
   }
 
-  return(sleep_on);
+  return (sleep_on);
 }
 
 //
@@ -269,25 +287,26 @@ bool sleepOn(int x)
 
 bool clockAvailable()
 {
-  return(clockHasBeenSet);
+  return (clockHasBeenSet);
 }
 
 const char *clockGet()
 {
-  if(switchThemeEditor())
-    return("00:00");
+  if (switchThemeEditor())
+    return ("00:00");
   else
-    return(clockHasBeenSet? clockText : NULL);
+    return (clockHasBeenSet ? clockText : NULL);
 }
 
 bool clockGetHM(uint8_t *hours, uint8_t *minutes)
 {
-  if(!clockHasBeenSet) return(false);
+  if (!clockHasBeenSet)
+    return (false);
   else
   {
-    *hours   = clockHours;
+    *hours = clockHours;
     *minutes = clockMinutes;
-    return(true);
+    return (true);
   }
 }
 
@@ -302,38 +321,39 @@ void clockReset()
 static void formatClock(uint8_t hours, uint8_t minutes)
 {
   int t = (int)hours * 60 + minutes + getCurrentUTCOffset() * 15;
-  t = t < 0? t + 24*60 : t;
+  t = t < 0 ? t + 24 * 60 : t;
   sprintf(clockText, "%02d:%02d", (t / 60) % 24, t % 60);
 }
 
 void clockRefreshTime()
 {
-  if(clockHasBeenSet) formatClock(clockHours, clockMinutes);
+  if (clockHasBeenSet)
+    formatClock(clockHours, clockMinutes);
 }
 
 bool clockSet(uint8_t hours, uint8_t minutes, uint8_t seconds)
 {
   // Verify input before setting clock
-  if(!clockHasBeenSet && hours < 24 && minutes < 60 && seconds < 60)
+  if (!clockHasBeenSet && hours < 24 && minutes < 60 && seconds < 60)
   {
     clockHasBeenSet = true;
-    clockTimer   = micros();
-    clockHours   = hours;
+    clockTimer = micros();
+    clockHours = hours;
     clockMinutes = minutes;
     clockSeconds = seconds;
     clockRefreshTime();
     identifyFrequency(currentFrequency + currentBFO / 1000);
-    return(true);
+    return (true);
   }
 
   // Failed
-  return(false);
+  return (false);
 }
 
 bool clockTickTime()
 {
   // Need to set the clock first, then accumulate one second of time
-  if(clockHasBeenSet && (micros() - clockTimer >= 1000000))
+  if (clockHasBeenSet && (micros() - clockTimer >= 1000000))
   {
     uint32_t delta;
 
@@ -341,13 +361,13 @@ bool clockTickTime()
     clockTimer += delta * 1000000;
     clockSeconds += delta;
 
-    if(clockSeconds>=60)
+    if (clockSeconds >= 60)
     {
       delta = clockSeconds / 60;
       clockSeconds -= delta * 60;
       clockMinutes += delta;
 
-      if(clockMinutes>=60)
+      if (clockMinutes >= 60)
       {
         delta = clockMinutes / 60;
         clockMinutes -= delta * 60;
@@ -356,12 +376,12 @@ bool clockTickTime()
 
       // Format clock for display and ask for screen update
       clockRefreshTime();
-      return(true);
+      return (true);
     }
   }
 
   // No screen update
-  return(false);
+  return (false);
 }
 
 //
@@ -369,7 +389,7 @@ bool clockTickTime()
 //
 bool isFreqInBand(const Band *band, uint16_t freq)
 {
-  return((freq>=band->minimumFreq) && (freq<=band->maximumFreq));
+  return ((freq >= band->minimumFreq) && (freq <= band->maximumFreq));
 }
 
 //
@@ -378,7 +398,7 @@ bool isFreqInBand(const Band *band, uint16_t freq)
 //
 uint16_t freqFromHz(uint32_t freq, uint8_t mode)
 {
-  return(mode == FM ? freq / 10000 : freq / 1000);
+  return (mode == FM ? freq / 10000 : freq / 1000);
 }
 
 //
@@ -386,7 +406,7 @@ uint16_t freqFromHz(uint32_t freq, uint8_t mode)
 //
 uint32_t freqToHz(uint16_t freq, uint8_t mode)
 {
-  return(mode == FM ? freq * 10000 : freq * 1000);
+  return (mode == FM ? freq * 10000 : freq * 1000);
 }
 
 //
@@ -394,7 +414,7 @@ uint32_t freqToHz(uint16_t freq, uint8_t mode)
 //
 uint16_t bfoFromHz(uint32_t freq)
 {
-  return(freq % 1000);
+  return (freq % 1000);
 }
 
 //
@@ -403,12 +423,17 @@ uint16_t bfoFromHz(uint32_t freq)
 bool isMemoryInBand(const Band *band, const Memory *memory)
 {
   uint16_t freq = freqFromHz(memory->freq, memory->mode);
-  if(freq<band->minimumFreq) return(false);
-  if(freq>band->maximumFreq) return(false);
-  if(freq==band->maximumFreq && bfoFromHz(memory->freq)) return(false);
-  if(memory->mode==FM && band->bandMode!=FM) return(false);
-  if(memory->mode!=FM && band->bandMode==FM) return(false);
-  return(true);
+  if (freq < band->minimumFreq)
+    return (false);
+  if (freq > band->maximumFreq)
+    return (false);
+  if (freq == band->maximumFreq && bfoFromHz(memory->freq))
+    return (false);
+  if (memory->mode == FM && band->bandMode != FM)
+    return (false);
+  if (memory->mode != FM && band->bandMode == FM)
+    return (false);
+  return (true);
 }
 
 //
@@ -416,43 +441,71 @@ bool isMemoryInBand(const Band *band, const Memory *memory)
 //
 int getStrength(int rssi)
 {
-  if(switchThemeEditor()) return(17);
+  if (switchThemeEditor())
+    return (17);
 
-  if(currentMode!=FM)
+  if (currentMode != FM)
   {
     // dBuV to S point conversion HF
-    if (rssi <=  1) return  1; // S0
-    if (rssi <=  2) return  2; // S1
-    if (rssi <=  3) return  3; // S2
-    if (rssi <=  4) return  4; // S3
-    if (rssi <= 10) return  5; // S4
-    if (rssi <= 16) return  6; // S5
-    if (rssi <= 22) return  7; // S6
-    if (rssi <= 28) return  8; // S7
-    if (rssi <= 34) return  9; // S8
-    if (rssi <= 44) return 10; // S9
-    if (rssi <= 54) return 11; // S9 +10
-    if (rssi <= 64) return 12; // S9 +20
-    if (rssi <= 74) return 13; // S9 +30
-    if (rssi <= 84) return 14; // S9 +40
-    if (rssi <= 94) return 15; // S9 +50
-    if (rssi <= 95) return 16; // S9 +60
-    return                 17; //>S9 +60
+    if (rssi <= 1)
+      return 1; // S0
+    if (rssi <= 2)
+      return 2; // S1
+    if (rssi <= 3)
+      return 3; // S2
+    if (rssi <= 4)
+      return 4; // S3
+    if (rssi <= 10)
+      return 5; // S4
+    if (rssi <= 16)
+      return 6; // S5
+    if (rssi <= 22)
+      return 7; // S6
+    if (rssi <= 28)
+      return 8; // S7
+    if (rssi <= 34)
+      return 9; // S8
+    if (rssi <= 44)
+      return 10; // S9
+    if (rssi <= 54)
+      return 11; // S9 +10
+    if (rssi <= 64)
+      return 12; // S9 +20
+    if (rssi <= 74)
+      return 13; // S9 +30
+    if (rssi <= 84)
+      return 14; // S9 +40
+    if (rssi <= 94)
+      return 15; // S9 +50
+    if (rssi <= 95)
+      return 16; // S9 +60
+    return 17;   //>S9 +60
   }
   else
   {
     // dBuV to S point conversion FM
-    if (rssi <=  1) return  1; // S0
-    if (rssi <=  2) return  7; // S6
-    if (rssi <=  8) return  8; // S7
-    if (rssi <= 14) return  9; // S8
-    if (rssi <= 24) return 10; // S9
-    if (rssi <= 34) return 11; // S9 +10
-    if (rssi <= 44) return 12; // S9 +20
-    if (rssi <= 54) return 13; // S9 +30
-    if (rssi <= 64) return 14; // S9 +40
-    if (rssi <= 74) return 15; // S9 +50
-    if (rssi <= 76) return 16; // S9 +60
-    return                 17; //>S9 +60
+    if (rssi <= 1)
+      return 1; // S0
+    if (rssi <= 2)
+      return 7; // S6
+    if (rssi <= 8)
+      return 8; // S7
+    if (rssi <= 14)
+      return 9; // S8
+    if (rssi <= 24)
+      return 10; // S9
+    if (rssi <= 34)
+      return 11; // S9 +10
+    if (rssi <= 44)
+      return 12; // S9 +20
+    if (rssi <= 54)
+      return 13; // S9 +30
+    if (rssi <= 64)
+      return 14; // S9 +40
+    if (rssi <= 74)
+      return 15; // S9 +50
+    if (rssi <= 76)
+      return 16; // S9 +60
+    return 17;   //>S9 +60
   }
 }

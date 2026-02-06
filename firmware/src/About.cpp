@@ -13,17 +13,20 @@ static void displayQRCode(esp_qrcode_handle_t qrcode)
 {
   int size = esp_qrcode_get_size(qrcode);
 
-  for(int y = 0 ; y < size ; y++)
-    for(int x = 0 ; x < size ; x++)
-      if(esp_qrcode_get_module(qrcode, x, y))
+  for (int y = 0; y < size; y++)
+    for (int x = 0; x < size; x++)
+      if (esp_qrcode_get_module(qrcode, x, y))
         spr.fillRect(2 + x * 4, 170 - 2 - size * 4 + y * 4, 4, 4, TH.text);
 }
 
 static void drawAboutCommon(uint8_t arrow)
 {
-  if(arrow & 3) spr.fillRect(282, 11, 22, 3, TH.text_muted);
-  if(arrow & 2) spr.fillTriangle(279, 12, 285, 8, 285, 16, TH.text_muted);
-  if(arrow & 1) spr.fillTriangle(307, 12, 301, 8, 301, 16, TH.text_muted);
+  if (arrow & 3)
+    spr.fillRect(282, 11, 22, 3, TH.text_muted);
+  if (arrow & 2)
+    spr.fillTriangle(279, 12, 285, 8, 285, 16, TH.text_muted);
+  if (arrow & 1)
+    spr.fillTriangle(307, 12, 301, 8, 301, 16, TH.text_muted);
 
   spr.setTextDatum(TL_DATUM);
   spr.setTextColor(TH.text_muted);
@@ -45,7 +48,7 @@ void drawAboutHelp(uint8_t arrow)
   spr.drawString("the User Manual.", 130, 70 + 16 * 0, 2);
   spr.drawString("Click the encoder button", 130, 70 + 16 * 1, 2);
   spr.drawString("to continue.", 130, 70 + 16 * 2, 2);
-  if(arrow)
+  if (arrow)
   {
     spr.drawString("Rotate the encoder to see", 130, 70 + 16 * 3, 2);
     spr.drawString("the next page.", 130, 70 + 16 * 4, 2);
@@ -67,61 +70,56 @@ static void drawAboutSystem(uint8_t arrow)
 
   char text[100];
   sprintf(
-    text,
-    "CPU: %s r%i, %lu MHz",
-    ESP.getChipModel(),
-    ESP.getChipRevision(),
-    ESP.getCpuFreqMHz()
-  );
+      text,
+      "CPU: %s r%i, %lu MHz",
+      ESP.getChipModel(),
+      ESP.getChipRevision(),
+      ESP.getCpuFreqMHz());
   spr.drawString(text, 2, 70 + 16 * -1, 2);
 
   sprintf(
-    text,
-    "FLASH: %luM, %luk (%luk), FS %luk (%luk)",
-    ESP.getFlashChipSize() / (1024U * 1024U),
-    ESP.getFreeSketchSpace() / 1024U,
-    (ESP.getFreeSketchSpace() - ESP.getSketchSize()) / 1024U,
-    (unsigned long)LittleFS.totalBytes() / 1024U,
-    (unsigned long)(LittleFS.totalBytes() - LittleFS.usedBytes()) / 1024U
-  );
+      text,
+      "FLASH: %luM, %luk (%luk), FS %luk (%luk)",
+      ESP.getFlashChipSize() / (1024U * 1024U),
+      ESP.getFreeSketchSpace() / 1024U,
+      (ESP.getFreeSketchSpace() - ESP.getSketchSize()) / 1024U,
+      (unsigned long)LittleFS.totalBytes() / 1024U,
+      (unsigned long)(LittleFS.totalBytes() - LittleFS.usedBytes()) / 1024U);
   spr.drawString(text, 2, 70 + 16 * 0, 2);
 
   nvs_stats_t nvs_stats;
   nvs_get_stats(STORAGE_PARTITION, &nvs_stats);
   sprintf(
-    text,
-    "NVS: TOTAL %u, USED %u, FREE %u",
-    nvs_stats.total_entries,
-    nvs_stats.used_entries,
-    nvs_stats.free_entries
-  );
+      text,
+      "NVS: TOTAL %u, USED %u, FREE %u",
+      nvs_stats.total_entries,
+      nvs_stats.used_entries,
+      nvs_stats.free_entries);
   spr.drawString(text, 2, 70 + 16 * 1, 2);
 
   sprintf(
-    text,
-    "MEM: HEAP %luk (%luk), PSRAM %luk (%luk)",
-    ESP.getHeapSize()/1024U, ESP.getFreeHeap()/1024U,
-    ESP.getPsramSize()/1024U, ESP.getFreePsram()/1024U
-  );
+      text,
+      "MEM: HEAP %luk (%luk), PSRAM %luk (%luk)",
+      ESP.getHeapSize() / 1024U, ESP.getFreeHeap() / 1024U,
+      ESP.getPsramSize() / 1024U, ESP.getFreePsram() / 1024U);
   spr.drawString(text, 2, 70 + 16 * 2, 2);
 
   sprintf(
-    text,
-    "Display ID: %08lX, STAT: %02X%08lX",
-    tft.readcommand32(ST7789_RDDID, 1),
-    tft.readcommand8(ST7789_RDDST, 1),
-    tft.readcommand32(ST7789_RDDST, 2)
-  );
+      text,
+      "Display ID: %08lX, STAT: %02X%08lX",
+      tft.readcommand32(ST7789_RDDID, 1),
+      tft.readcommand8(ST7789_RDDST, 1),
+      tft.readcommand32(ST7789_RDDST, 2));
   spr.drawString(text, 2, 70 + 16 * 3, 2);
 
   char *ip = getWiFiIPAddress();
   sprintf(text, "WiFi MAC: %s%s%s", getMACAddress(), *ip ? ", IP: " : "", *ip ? ip : "");
   spr.drawString(text, 2, 70 + 16 * 4, 2);
 
-  for(int i=0 ; i<8 ; i++)
+  for (int i = 0; i < 8; i++)
   {
-    uint16_t rgb = (i&1? 0x001F:0) | (i&2? 0x07E0:0) | (i&4? 0xF800:0);
-    spr.fillRect(i*40, 160, 40, 20, rgb);
+    uint16_t rgb = (i & 1 ? 0x001F : 0) | (i & 2 ? 0x07E0 : 0) | (i & 4 ? 0xF800 : 0);
+    spr.fillRect(i * 40, 160, 40, 20, rgb);
   }
   spr.pushSprite(0, 0);
 }
@@ -145,11 +143,18 @@ static void drawAboutAuthors(uint8_t arrow)
 //
 void drawAbout()
 {
-  switch(doAbout(0))
+  switch (doAbout(0))
   {
-    case 0: drawAboutHelp(1); break;
-    case 1: drawAboutAuthors(3); break;
-    case 2: drawAboutSystem(2); break;
-    default: break;
+  case 0:
+    drawAboutHelp(1);
+    break;
+  case 1:
+    drawAboutAuthors(3);
+    break;
+  case 2:
+    drawAboutSystem(2);
+    break;
+  default:
+    break;
   }
 }

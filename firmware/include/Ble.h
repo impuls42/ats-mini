@@ -5,28 +5,28 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
-#include "host/ble_gap.h"
-#include <semaphore>
+#include <freertos/semphr.h>
 
 #include "Remote.h"
 
-#define NORDIC_UART_SERVICE_UUID           "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
+#define NORDIC_UART_SERVICE_UUID "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
 #define NORDIC_UART_CHARACTERISTIC_UUID_RX "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
 #define NORDIC_UART_CHARACTERISTIC_UUID_TX "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 
-class NordicUART : public Stream, public BLEServerCallbacks, public BLECharacteristicCallbacks {
+class NordicUART : public Stream, public BLEServerCallbacks, public BLECharacteristicCallbacks
+{
 private:
   // BLE components
-  BLEServer* pServer;
-  BLEService* pService;
-  BLECharacteristic* pTxCharacteristic;
-  BLECharacteristic* pRxCharacteristic;
+  BLEServer *pServer;
+  BLEService *pService;
+  BLECharacteristic *pTxCharacteristic;
+  BLECharacteristic *pRxCharacteristic;
 
   // Connection management
   bool started;
 
   // Data handling
-  std::binary_semaphore dataConsumed{1};
+  SemaphoreHandle_t dataConsumedSem;
   String incomingPacket;
   size_t unreadByteCount = 0;
 
@@ -34,27 +34,28 @@ private:
   const char *deviceName;
 
 public:
-  NordicUART(const char *name) : deviceName(name) {
+  NordicUART(const char *name) : deviceName(name)
+  {
     started = false;
     pServer = nullptr;
     pService = nullptr;
     pTxCharacteristic = nullptr;
     pRxCharacteristic = nullptr;
+    dataConsumedSem = xSemaphoreCreateBinary();
+    if (dataConsumedSem != nullptr)
+    {
+      xSemaphoreGive(dataConsumedSem); // Start with semaphore available
+    }
   }
 
   void start()
   {
     BLEDevice::init(deviceName);
-    BLEDevice::setPower(ESP_PWR_LVL_N0); // N12, N9, N6, N3, N0, P3, P6, P9
-    BLEDevice::getAdvertising()->setName(deviceName);
+    BLEDevice::setPower(ESP_PWR_LVL_N0);
 
     BLEDevice::setMTU(517);
-    ble_gap_set_prefered_default_le_phy(BLE_GAP_LE_PHY_ANY_MASK, BLE_GAP_LE_PHY_ANY_MASK);
-    ble_gap_write_sugg_def_data_len(251, (251 + 14) * 8);
 
-    pServer = BLEDevice::getServer();
-    if (pServer == nullptr)
-      pServer = BLEDevice::createServer();
+    pServer = BLEDevice::createServer();
 
     pServer->setCallbacks(this); // onConnect/onDisconnect
     pServer->getAdvertising()->addServiceUUID(NORDIC_UART_SERVICE_UUID);
@@ -71,19 +72,12 @@ public:
 
   void stop()
   {
-    pServer = BLEDevice::getServer();
     if (pServer)
     {
       pServer->getAdvertising()->stop();
       pService->stop();
-
-      pService->removeCharacteristic(pRxCharacteristic, true);
       pRxCharacteristic = nullptr;
-
-      pService->removeCharacteristic(pTxCharacteristic, true);
       pTxCharacteristic = nullptr;
-
-      pServer->removeService(pService);
       pService = nullptr;
     }
     BLEDevice::deinit(false);
@@ -95,27 +89,40 @@ public:
     return started;
   }
 
-  void onConnect(BLEServer *pServer, ble_gap_conn_desc *desc) {
-    ble_gap_set_prefered_le_phy(desc->conn_handle, BLE_GAP_LE_PHY_ANY_MASK, BLE_GAP_LE_PHY_ANY_MASK, BLE_GAP_LE_PHY_CODED_ANY);
-    ble_gap_set_data_len(desc->conn_handle, 251, (251 + 14) * 8);
-    pServer->updateConnParams(desc->conn_handle, 6, 12, 0, 200);
+  int connectedCount()
+  {
+    return (pServer != nullptr) ? pServer->getConnectedCount() : 0;
   }
 
-  void onDisconnect(BLEServer *pServer, ble_gap_conn_desc *desc) {
-    dataConsumed.release();
+  // Arduino BLE callbacks (BlueDroid API)
+  void onConnect(BLEServer *pServer)
+  {
+    // BlueDroid callback signature - no access to low-level PHY/MTU settings
+    // These would require NimBLE API which isn't available in Arduino framework
+  }
+
+  void onDisconnect(BLEServer *pServer)
+  {
+    if (dataConsumedSem != nullptr)
+    {
+      xSemaphoreGive(dataConsumedSem);
+    }
     pServer->getAdvertising()->start();
   }
 
-  // FIXME https://github.com/espressif/arduino-esp32/issues/11805
-  void onWrite(BLECharacteristic *pCharacteristic, ble_gap_conn_desc *desc)
+  void onWrite(BLECharacteristic *pCharacteristic)
   {
-    if(pCharacteristic == pRxCharacteristic)
+    if (pCharacteristic == pRxCharacteristic)
     {
       // Wait for previous data to get consumed
-      dataConsumed.acquire();
+      if (dataConsumedSem != nullptr)
+      {
+        xSemaphoreTake(dataConsumedSem, portMAX_DELAY);
+      }
 
       // Hold data until next read
-      incomingPacket = pCharacteristic->getValue();
+      std::string value = pCharacteristic->getValue();
+      incomingPacket = String(value.c_str()); // Convert std::string to Arduino String
       unreadByteCount = incomingPacket.length();
     }
   }
@@ -134,8 +141,8 @@ public:
   {
     if (unreadByteCount > 0)
     {
-        size_t index = incomingPacket.length() - unreadByteCount;
-        return incomingPacket[index];
+      size_t index = incomingPacket.length() - unreadByteCount;
+      return incomingPacket[index];
     }
     return -1;
   }
@@ -147,22 +154,15 @@ public:
       size_t index = incomingPacket.length() - unreadByteCount;
       int result = incomingPacket[index];
       unreadByteCount--;
-      if (unreadByteCount == 0)
-        dataConsumed.release();
+      if (unreadByteCount == 0 && dataConsumedSem != nullptr)
+      {
+        xSemaphoreGive(dataConsumedSem);
+      }
       return result;
     }
     return -1;
   }
 
-  // It is hard to achieve max throughput witout using delays...
-  //
-  // https://github.com/nkolban/esp32-snippets/issues/773
-  // https://github.com/espressif/arduino-esp32/issues/8413
-  // https://github.com/espressif/esp-idf/issues/9097
-  // https://github.com/espressif/esp-idf/issues/16889
-  // https://github.com/espressif/esp-nimble/issues/75
-  // https://github.com/espressif/esp-nimble/issues/106
-  // https://github.com/h2zero/esp-nimble-cpp/issues/347
   size_t write(const uint8_t *data, size_t size)
   {
     if (pTxCharacteristic)
@@ -170,19 +170,20 @@ public:
       // Data is sent in chunks of (MTU - 3) to account for ATT header
       size_t chunkSize = BLEDevice::getMTU() - 3;
       size_t remainingByteCount = size;
-      
+      uint8_t *mutableData = (uint8_t *)data; // Cast away const for BLE API
+
       // Delay after each notification to ensure reliable delivery
       while (remainingByteCount >= chunkSize)
       {
-        pTxCharacteristic->setValue(data, chunkSize);
+        pTxCharacteristic->setValue(mutableData, chunkSize);
         pTxCharacteristic->notify();
-        data += chunkSize;
+        mutableData += chunkSize;
         remainingByteCount -= chunkSize;
-        delay(5);  // Minimal delay for 512-byte single-chunk writes
+        delay(5); // Minimal delay for 512-byte single-chunk writes
       }
       if (remainingByteCount > 0)
       {
-        pTxCharacteristic->setValue(data, remainingByteCount);
+        pTxCharacteristic->setValue(mutableData, remainingByteCount);
         pTxCharacteristic->notify();
       }
       // Final delay to ensure last data is transmitted
@@ -214,7 +215,7 @@ public:
     {
       return 0;
     }
-    
+
     char *buffer = (char *)malloc(requiredSize + 1);
     if (buffer)
     {
@@ -236,8 +237,8 @@ public:
 void bleInit(uint8_t bleMode);
 void bleStop();
 int8_t getBleStatus();
-void remoteBLETickTime(Stream* stream, RemoteState* state, uint8_t bleMode);
-int bleDoCommand(Stream* stream, RemoteState* state, uint8_t bleMode);
+void remoteBLETickTime(Stream *stream, RemoteState *state, uint8_t bleMode);
+int bleDoCommand(Stream *stream, RemoteState *state, uint8_t bleMode);
 extern NordicUART BLESerial;
 
 #endif

@@ -1,8 +1,0 @@
-LICENSE
-README.md
-pyproject.toml
-ats_mini.egg-info/PKG-INFO
-ats_mini.egg-info/SOURCES.txt
-ats_mini.egg-info/dependency_links.txt
-ats_mini.egg-info/requires.txt
-ats_mini.egg-info/top_level.txt

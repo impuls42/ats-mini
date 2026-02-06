@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ats-cli"
+version = "0.1.0"
+description = "ATS-Mini CLI Terminal Client"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+
+dependencies = [
+  "ats-sdk",
+]
+
+[project.scripts]
+atsmini-terminal = "ats_cli.terminal:main"
+
+[project.urls]
+Repository = "https://github.com/esp32-si4732/ats-mini"
+Issues = "https://github.com/esp32-si4732/ats-mini/issues"
+
+[tool.setuptools]
+packages = ["ats_cli"]
+package-dir = {"" = "src"}

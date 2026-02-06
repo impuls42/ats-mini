@@ -97,6 +97,22 @@ RemoteState remoteSerialState;
 RemoteState remoteBLEState;
 
 //
+// Get current serial connection status
+// (-1 - not connected, 0 - disabled, 1 - connected recently)
+//
+int8_t getSerialStatus()
+{
+  if (usbModeIdx == USB_OFF)
+    return 0;
+
+  // Show as connected if activity within last 3 seconds
+  if ((millis() - remoteSerialState.remoteTimer) < 3000)
+    return 1;
+
+  return -1;
+}
+
+//
 // Devices
 //
 Rotary encoder = Rotary(ENCODER_PIN_B, ENCODER_PIN_A);

@@ -4,7 +4,7 @@
 // This is our current theme
 #define TH (theme[themeIdx])
 
-typedef struct __attribute__ ((packed))
+typedef struct __attribute__((packed))
 {
   const char *name;
   uint16_t bg;
@@ -23,6 +23,9 @@ typedef struct __attribute__ ((packed))
 
   uint16_t rf_icon;
   uint16_t rf_icon_conn;
+
+  uint16_t serial_icon;
+  uint16_t serial_icon_conn;
 
   uint16_t batt_voltage;
   uint16_t batt_border;

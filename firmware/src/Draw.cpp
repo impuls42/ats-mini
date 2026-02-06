@@ -69,6 +69,34 @@ void drawWiFiIndicator(int x, int y)
 }
 
 //
+// Draw Serial indicator
+//
+void drawSerialIndicator(int x, int y)
+{
+  int8_t status = getSerialStatus();
+
+  // If need to draw Serial icon...
+  if (status || switchThemeEditor())
+  {
+    uint16_t color = (status > 0) ? TH.serial_icon_conn : TH.serial_icon;
+
+    // For the editor, alternate between Serial states every ~8 seconds
+    if (switchThemeEditor())
+      color = millis() & 0x2000 ? TH.serial_icon_conn : TH.serial_icon;
+
+    // Draw USB-style icon (rectangle with trapezoid)
+    spr.fillRect(x + 2, y + 4, 6, 6, color);
+    spr.drawLine(x + 1, y + 10, x + 1, y + 11, color);
+    spr.drawLine(x + 2, y + 11, x + 2, y + 12, color);
+    spr.drawLine(x + 3, y + 12, x + 3, y + 13, color);
+    spr.drawLine(x + 4, y + 13, x + 5, y + 13, color);
+    spr.drawLine(x + 6, y + 12, x + 6, y + 13, color);
+    spr.drawLine(x + 7, y + 11, x + 7, y + 12, color);
+    spr.drawLine(x + 8, y + 10, x + 8, y + 11, color);
+  }
+}
+
+//
 // Draw network status
 //
 bool drawWiFiStatus(const char *statusLine1, const char *statusLine2, int x, int y)

@@ -18,6 +18,8 @@ ColorTheme theme[] =
             0xD69A, // stereo_icon
             0xF800, // rf_icon
             0x07E0, // rf_icon_conn
+            0xF800, // serial_icon
+            0x07E0, // serial_icon_conn
             0xFFFF, // batt_voltage
             0xFFFF, // batt_border
             0x07E0, // batt_full
@@ -66,6 +68,10 @@ ColorTheme theme[] =
             0xD69A, // stereo_icon
             0xF800, // rf_icon
             0x07E0, // rf_icon_conn
+
+            0xF800, // serial_icon
+            0x07E0, // serial_icon_conn
+
             0xFFFF, // batt_voltage
             0xFFFF, // batt_border
             0x07E0, // batt_full
@@ -114,6 +120,9 @@ ColorTheme theme[] =
             0x632C, // stereo_icon
             0x3A08, // rf_icon
             0x632C, // rf_icon_conn
+
+            0x3A08, // serial_icon
+            0x632C, // serial_icon_conn
             0x18C3, // batt_voltage
             0x0000, // batt_border
             0x632C, // batt_full
@@ -162,6 +171,9 @@ ColorTheme theme[] =
             0x00C2, // stereo_icon
             0x00C2, // rf_icon
             0x1165, // rf_icon_conn
+
+            0x00C2, // serial_icon
+            0x1165, // serial_icon_conn
             0x18C3, // batt_voltage
             0x0000, // batt_border
             0x1165, // batt_full
@@ -210,6 +222,9 @@ ColorTheme theme[] =
             0x2945, // stereo_icon
             0x2945, // rf_icon
             0x4208, // rf_icon_conn
+
+            0x2945, // serial_icon
+            0x4208, // serial_icon_conn
             0x18C3, // batt_voltage
             0x0000, // batt_border
             0x4208, // batt_full

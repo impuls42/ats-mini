@@ -8,19 +8,12 @@ version = "0.1.0"
 description = "ATS-Mini CBOR-RPC Communication SDK"
 readme = "README.md"
 requires-python = ">=3.12"
-license = {text = "MIT"}
+license = { text = "MIT" }
 
-dependencies = [
-  "cbor2",
-  "pyserial",
-  "websockets",
-]
+dependencies = ["cbor2", "pyserial", "websockets"]
 
 [project.optional-dependencies]
-test = [
-  "pytest",
-  "pytest-asyncio",
-]
+test = ["pytest", "pytest-asyncio"]
 
 [project.urls]
 Repository = "https://github.com/esp32-si4732/ats-mini"
@@ -28,8 +21,13 @@ Issues = "https://github.com/esp32-si4732/ats-mini/issues"
 
 [tool.setuptools]
 packages = ["ats_sdk"]
-package-dir = {"" = "src"}
+package-dir = { "" = "src" }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+log_cli = false
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s.%(msecs)03d [%(name)s] %(levelname)s: %(message)s"
+log_cli_date_format = "%H:%M:%S"
+# Use -v for verbose test names, --log-cli-level=DEBUG for SDK debug logs

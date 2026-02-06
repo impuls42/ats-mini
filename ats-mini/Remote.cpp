@@ -4,6 +4,8 @@
 #include "Menu.h"
 #include "Draw.h"
 #include "Remote.h"
+#include "Compression.h"
+#include "CborRpc.h"
 
 
 static uint8_t char2nibble(char key)
@@ -14,45 +16,154 @@ static uint8_t char2nibble(char key)
   return(0);
 }
 
+static void writeHex32(Stream* stream, uint32_t value)
+{
+  stream->printf("%08x", (unsigned int)htonl(value));
+}
+
+static bool cborRpcSendFrameStream(void *ctx, const uint8_t *data, size_t len)
+{
+  Stream *stream = (Stream *)ctx;
+  uint8_t header[4] = {
+    (uint8_t)((len >> 24) & 0xFF),
+    (uint8_t)((len >> 16) & 0xFF),
+    (uint8_t)((len >> 8) & 0xFF),
+    (uint8_t)(len & 0xFF)
+  };
+  stream->write(header, sizeof(header));
+  stream->write(data, len);
+  return true;
+}
+
+static void cborRpcResetState(RemoteState *state)
+{
+  state->rpcExpected = 0;
+  state->rpcRead = 0;
+  state->rpcHeaderRead = 0;
+}
+
+static void cborRpcTickTime(Stream* stream, RemoteState* state)
+{
+  if (!state->rpcEvents) return;
+  if (millis() - state->remoteTimer >= 500) {
+    state->remoteTimer = millis();
+    CborRpcWriter writer = { stream, cborRpcSendFrameStream };
+    cborRpcSendStatsEvent(&writer, state);
+  }
+}
+
 //
 // Capture current screen image to the remote
 //
-static void remoteCaptureScreen(Stream* stream)
+void remoteCaptureScreen(Stream* stream, bool binary)
 {
   uint16_t width  = spr.width();
   uint16_t height = spr.height();
+  uint32_t imageSize = (uint32_t)(14 + 40 + 12 + width * height * 2);
+  uint32_t pixelOffset = 14 + 40 + 12;
 
-  // 14 bytes of BMP header
-  stream->println("");
-  stream->print("424d"); // BM
-  // Image size
-  stream->printf("%08x", (unsigned int)htonl(14 + 40 + 12 + width * height * 2));
-  stream->print("00000000");
-  // Offset to image data
-  stream->printf("%08x", (unsigned int)htonl(14 + 40 + 12));
-  // Image header
-  stream->print("28000000"); // Header size
-  stream->printf("%08x", (unsigned int)htonl(width));
-  stream->printf("%08x", (unsigned int)htonl(height));
-  stream->print("01001000"); // 1 plane, 16 bpp
-  stream->print("03000000"); // Compression
-  stream->print("00000000"); // Compressed image size
-  stream->print("00000000"); // X res
-  stream->print("00000000"); // Y res
-  stream->print("00000000"); // Color map
-  stream->print("00000000"); // Colors
-  stream->print("00f80000"); // Red mask
-  stream->print("e0070000"); // Green mask
-  stream->println("1f000000"); // Blue mask
-
-  // Image data
-  for(int y=height-1 ; y>=0 ; y--)
-  {
-    for(int x=0 ; x<width ; x++)
-    {
-      stream->printf("%04x", htons(spr.readPixel(x, y)));
-    }
+  if (!binary) {
+    // 14 bytes of BMP header (hex mode)
     stream->println("");
+    stream->print("424d"); // BM
+    // Image size
+    writeHex32(stream, imageSize);
+    stream->print("00000000");
+    // Offset to image data
+    writeHex32(stream, pixelOffset);
+    // Image header
+    stream->print("28000000"); // Header size
+    writeHex32(stream, width);
+    writeHex32(stream, height);
+    stream->print("01001000"); // 1 plane, 16 bpp
+    stream->print("03000000"); // Compression
+    stream->print("00000000"); // Compressed image size
+    stream->print("00000000"); // X res
+    stream->print("00000000"); // Y res
+    stream->print("00000000"); // Color map
+    stream->print("00000000"); // Colors
+    stream->print("00f80000"); // Red mask
+    stream->print("e0070000"); // Green mask
+    stream->println("1f000000"); // Blue mask
+
+    // Image data (hex mode)
+    for(int y=height-1 ; y>=0 ; y--)
+    {
+      for(int x=0 ; x<width ; x++)
+      {
+        uint16_t pixel = spr.readPixel(x, y);
+        stream->printf("%04x", htons(pixel));
+      }
+      stream->println("");
+    }
+  } else {
+    // Binary mode with buffering for better BLE performance
+    
+    // Write BMP header
+    uint8_t header[66];
+    uint8_t* p = header;
+    
+    // File header (14 bytes)
+    *p++ = 'B'; *p++ = 'M';
+    *p++ = imageSize & 0xFF; *p++ = (imageSize >> 8) & 0xFF;
+    *p++ = (imageSize >> 16) & 0xFF; *p++ = (imageSize >> 24) & 0xFF;
+    *p++ = 0; *p++ = 0; *p++ = 0; *p++ = 0;  // Reserved
+    *p++ = pixelOffset & 0xFF; *p++ = (pixelOffset >> 8) & 0xFF;
+    *p++ = (pixelOffset >> 16) & 0xFF; *p++ = (pixelOffset >> 24) & 0xFF;
+    
+    // Info header (40 bytes)
+    *p++ = 40; *p++ = 0; *p++ = 0; *p++ = 0;  // Header size
+    *p++ = width & 0xFF; *p++ = (width >> 8) & 0xFF;
+    *p++ = (width >> 16) & 0xFF; *p++ = (width >> 24) & 0xFF;
+    *p++ = height & 0xFF; *p++ = (height >> 8) & 0xFF;
+    *p++ = (height >> 16) & 0xFF; *p++ = (height >> 24) & 0xFF;
+    *p++ = 1; *p++ = 0;  // Planes
+    *p++ = 16; *p++ = 0;  // Bits per pixel
+    *p++ = 3; *p++ = 0; *p++ = 0; *p++ = 0;  // Compression = BI_BITFIELDS
+    *p++ = 0; *p++ = 0; *p++ = 0; *p++ = 0;  // Image size
+    *p++ = 0; *p++ = 0; *p++ = 0; *p++ = 0;  // X pixels/meter
+    *p++ = 0; *p++ = 0; *p++ = 0; *p++ = 0;  // Y pixels/meter
+    *p++ = 0; *p++ = 0; *p++ = 0; *p++ = 0;  // Colors used
+    *p++ = 0; *p++ = 0; *p++ = 0; *p++ = 0;  // Important colors
+    
+    // Color masks (12 bytes)
+    *p++ = 0x00; *p++ = 0xF8; *p++ = 0x00; *p++ = 0x00;  // Red
+    *p++ = 0xE0; *p++ = 0x07; *p++ = 0x00; *p++ = 0x00;  // Green
+    *p++ = 0x1F; *p++ = 0x00; *p++ = 0x00; *p++ = 0x00;  // Blue
+    
+    stream->write(header, 66);
+    
+    // Buffer pixel data with stack allocation (avoid malloc failures on heap)
+    // Use MTU-aligned 512-byte buffer for reliable BLE transfer
+    uint8_t pixelBuffer[512];
+    size_t bufferPos = 0;
+    
+    for(int y=height-1 ; y>=0 ; y--)
+    {
+      for(int x=0 ; x<width ; x++)
+      {
+        uint16_t pixel = spr.readPixel(x, y);
+        
+        // Flush buffer if adding next pixel would exceed capacity
+        if ((bufferPos + 2) > (size_t)sizeof(pixelBuffer)) {
+          stream->write(pixelBuffer, bufferPos);
+          bufferPos = 0;
+        }
+        
+        // Add pixel to buffer (little-endian)
+        pixelBuffer[bufferPos++] = pixel & 0xFF;
+        pixelBuffer[bufferPos++] = (pixel >> 8) & 0xFF;
+      }
+    }
+    
+    // Flush all remaining data
+    if (bufferPos > 0) {
+      stream->write(pixelBuffer, bufferPos);
+      bufferPos = 0;
+    }
+    
+    // Explicit final delay to ensure last data is transmitted over BLE
+    delay(500);
   }
 }
 
@@ -398,7 +509,19 @@ int remoteDoCommand(Stream* stream, RemoteState* state, char key)
       break;
     case 'C':
       state->remoteLogOn = false;
-      remoteCaptureScreen(stream);
+      remoteCaptureScreen(stream, false);
+      break;
+    case 'c':
+      state->remoteLogOn = false;
+      remoteCaptureScreen(stream, true);
+      break;
+    case 'd':
+      state->remoteLogOn = false;
+      remoteCaptureDeltaRle(stream);
+      break;
+    case 'z':
+      state->remoteLogOn = false;
+      remoteCaptureZlibRaw(stream);
       break;
     case 't':
       state->remoteLogOn = !state->remoteLogOn;
@@ -435,14 +558,33 @@ int serialDoCommand(Stream* stream, RemoteState* state, uint8_t usbMode)
 {
   if(usbMode == USB_OFF) return 0;
 
-  if (Serial.available())
-    return remoteDoCommand(stream, state, Serial.read());
+  if (state->rpcMode) {
+    CborRpcWriter writer = { stream, cborRpcSendFrameStream };
+    cborRpcConsumeStream(stream, state, &writer);
+    return 0;
+  }
+
+  if (Serial.available()) {
+    uint8_t key = Serial.read();
+    if (key == CBOR_RPC_SWITCH) {
+      state->rpcMode = true;
+      cborRpcResetState(state);
+      state->remoteTimer = millis();
+      return 0;
+    }
+    return remoteDoCommand(stream, state, key);
+  }
   return 0;
 }
 
 void serialTickTime(Stream* stream, RemoteState* state, uint8_t usbMode)
 {
   if(usbMode == USB_OFF) return;
+
+  if (state->rpcMode) {
+    cborRpcTickTime(stream, state);
+    return;
+  }
 
   remoteTickTime(stream, state);
 }

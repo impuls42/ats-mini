@@ -209,6 +209,7 @@ bool ntpSyncTime();
 
 void netRequestConnect();
 void netTickTime();
+void netRpcTickTime();
 
 // Remote.c
 #define REMOTE_CHANGED   1

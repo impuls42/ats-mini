@@ -1,0 +1,12 @@
+towncrier
+pre-commit
+sphinx
+furo
+myst_parser
+sphinx-autobuild
+
+[rpc]
+pytest
+cbor2
+pyserial
+websockets

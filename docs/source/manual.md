@@ -199,6 +199,7 @@ Alternatively, open the following web terminal in Google Chrome: <https://www.se
 | <kbd>o</kbd> | Sleep Off           |                                                                                              |
 | <kbd>t</kbd> | Toggle Log          | Toggle the receiver monitor (log) on and off                                                 |
 | <kbd>C</kbd> | Screenshot          | Capture a screenshot and print it as a BMP image in HEX format                               |
+| <kbd>c</kbd> | Screenshot (binary) | Capture a screenshot and stream a BMP image in binary format                                 |
 | <kbd>$</kbd> | Show Memory Slots   | Show memory slots in a format suitable for restoring them after the reset                    |
 | <kbd>#</kbd> | Set Memory Slot     | Example `#01,VHF,107900000,FM` (slot, band, frequency, mode). Set freq to 0 to clear a slot. |
 | <kbd>T</kbd> | Theme Editor        | Toggle the [theme editor](development.md#theme-editor) on and off                            |
@@ -233,10 +234,16 @@ In SSB mode, the "Display" frequency (Hz) = (currentFrequency x 1000) + currentB
 
 ### Making screenshots
 
-The screenshot function is intended for interface and theme designers, as well as for the documentation writers. It dumps the screen to the serial console as a BMP image in the HEX format. To convert it to an image file, you need to convert the HEX string to binary format.
+The screenshot function is intended for interface and theme designers, as well as for the documentation writers. It can dump the screen to the serial console as a BMP image in HEX format (<kbd>C</kbd>), or stream a raw binary BMP (<kbd>c</kbd>).
 
 A quick one-liner for macOS and Linux (change the `/dev/cu.usbmodem14401` serial port name as needed):
 
 ```shell
 echo -n C | socat stdio /dev/cu.usbmodem14401,echo=0,raw | xxd -r -p > /tmp/screenshot.bmp
+
+To capture the **binary** BMP stream:
+
+```shell
+echo -n c | socat stdio /dev/cu.usbmodem14401,echo=0,raw > /tmp/screenshot.bmp
+```
 ```

@@ -4,6 +4,8 @@
 #include "Utils.h"
 #include "Menu.h"
 #include "Draw.h"
+#include "Remote.h"
+#include "CborRpc.h"
 
 #include <WiFi.h>
 #include <WiFiMulti.h>
@@ -12,6 +14,7 @@
 #include <ESPAsyncWebServer.h>
 #include <NTPClient.h>
 #include <ESPmDNS.h>
+#include <string.h>
 
 #define CONNECT_TIME  3000  // Time of inactivity to start connecting WiFi
 
@@ -37,6 +40,7 @@ String loginPassword = "";
 
 // AsyncWebServer object on port 80
 AsyncWebServer server(80);
+AsyncWebSocket rpcSocket("/rpc");
 
 // NTP Client to get time
 WiFiUDP ntpUDP;
@@ -56,6 +60,66 @@ static const String webThemeSelector();
 static const String webRadioPage();
 static const String webMemoryPage();
 static const String webConfigPage();
+
+typedef struct {
+  bool active = false;
+  uint32_t id = 0;
+  RemoteState state;
+} RpcWsClient;
+
+static RpcWsClient rpcClients[3];
+
+static RpcWsClient *rpcFindClient(uint32_t id)
+{
+  for (size_t i = 0; i < ITEM_COUNT(rpcClients); i++) {
+    if (rpcClients[i].active && rpcClients[i].id == id) return &rpcClients[i];
+  }
+  return nullptr;
+}
+
+static RpcWsClient *rpcEnsureClient(uint32_t id)
+{
+  RpcWsClient *client = rpcFindClient(id);
+  if (client) return client;
+
+  for (size_t i = 0; i < ITEM_COUNT(rpcClients); i++) {
+    if (!rpcClients[i].active) {
+      rpcClients[i].active = true;
+      rpcClients[i].id = id;
+      rpcClients[i].state = RemoteState();
+      rpcClients[i].state.rpcMode = true;
+      rpcClients[i].state.remoteTimer = millis();
+      return &rpcClients[i];
+    }
+  }
+  return nullptr;
+}
+
+static void rpcRemoveClient(uint32_t id)
+{
+  for (size_t i = 0; i < ITEM_COUNT(rpcClients); i++) {
+    if (rpcClients[i].active && rpcClients[i].id == id) {
+      rpcClients[i].active = false;
+      rpcClients[i].id = 0;
+    }
+  }
+}
+
+static bool cborRpcSendFrameWs(void *ctx, const uint8_t *data, size_t len)
+{
+  AsyncWebSocketClient *client = (AsyncWebSocketClient *)ctx;
+  if (!client) return false;
+  uint8_t *buffer = (uint8_t *)malloc(len + 4);
+  if (!buffer) return false;
+  buffer[0] = (uint8_t)((len >> 24) & 0xFF);
+  buffer[1] = (uint8_t)((len >> 16) & 0xFF);
+  buffer[2] = (uint8_t)((len >> 8) & 0xFF);
+  buffer[3] = (uint8_t)(len & 0xFF);
+  memcpy(buffer + 4, data, len);
+  client->binary(buffer, len + 4);
+  free(buffer);
+  return true;
+}
 
 //
 // Delayed WiFi connection
@@ -322,8 +386,63 @@ static void webInit()
   // This method saves configuration form contents
   server.on("/setconfig", HTTP_ANY, webSetConfig);
 
+  rpcSocket.onEvent([](AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
+                       void *arg, uint8_t *data, size_t len) {
+    if (type == WS_EVT_CONNECT) {
+      rpcEnsureClient(client->id());
+      return;
+    }
+    if (type == WS_EVT_DISCONNECT) {
+      rpcRemoveClient(client->id());
+      return;
+    }
+    if (type != WS_EVT_DATA) return;
+
+    AwsFrameInfo *info = (AwsFrameInfo *)arg;
+    if (!info || info->opcode != WS_BINARY) return;
+    if (!info->final || info->index != 0 || info->len != len) return;
+
+    RpcWsClient *rpcClient = rpcEnsureClient(client->id());
+    if (!rpcClient) return;
+
+    const uint8_t *payload = data;
+    size_t payloadLen = len;
+    if (len >= 4) {
+      uint32_t frameLen = ((uint32_t)data[0] << 24) |
+                          ((uint32_t)data[1] << 16) |
+                          ((uint32_t)data[2] << 8) |
+                          (uint32_t)data[3];
+      if (frameLen == len - 4) {
+        payload = data + 4;
+        payloadLen = frameLen;
+      }
+    }
+
+    CborRpcWriter writer = { client, cborRpcSendFrameWs };
+    cborRpcHandleFrame(payload, payloadLen, &writer, &rpcClient->state);
+  });
+
+  server.addHandler(&rpcSocket);
+
   // Start web server
   server.begin();
+}
+
+void netRpcTickTime()
+{
+  for (size_t i = 0; i < ITEM_COUNT(rpcClients); i++) {
+    if (!rpcClients[i].active) continue;
+    if (!rpcClients[i].state.rpcEvents) continue;
+
+    AsyncWebSocketClient *client = rpcSocket.client(rpcClients[i].id);
+    if (!client) continue;
+
+    if (millis() - rpcClients[i].state.remoteTimer >= 500) {
+      rpcClients[i].state.remoteTimer = millis();
+      CborRpcWriter writer = { client, cborRpcSendFrameWs };
+      cborRpcSendStatsEvent(&writer, &rpcClients[i].state);
+    }
+  }
 }
 
 void webSetConfig(AsyncWebServerRequest *request)

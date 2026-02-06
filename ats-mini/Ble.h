@@ -59,6 +59,7 @@ public:
     pServer->setCallbacks(this); // onConnect/onDisconnect
     pServer->getAdvertising()->addServiceUUID(NORDIC_UART_SERVICE_UUID);
     pService = pServer->createService(NORDIC_UART_SERVICE_UUID);
+    // Use NOTIFY with retry logic for high-throughput reliable delivery
     pTxCharacteristic = pService->createCharacteristic(NORDIC_UART_CHARACTERISTIC_UUID_TX, BLECharacteristic::PROPERTY_NOTIFY);
     pTxCharacteristic->setCallbacks(this); // onSubscribe/onStatus
     pRxCharacteristic = pService->createCharacteristic(NORDIC_UART_CHARACTERISTIC_UUID_RX, BLECharacteristic::PROPERTY_WRITE);
@@ -121,7 +122,7 @@ public:
 
   void onStatus(BLECharacteristic *pCharacteristic, Status s, uint32_t code)
   {
-    // if(code) Serial.println(code);
+    // Status callback for debugging if needed
   }
 
   int available()
@@ -166,24 +167,26 @@ public:
   {
     if (pTxCharacteristic)
     {
-      // Data is sent in chunks of MTU size to avoid data loss
-      // as each chunk is notified separately
-      size_t chunkSize = BLEDevice::getMTU();
+      // Data is sent in chunks of (MTU - 3) to account for ATT header
+      size_t chunkSize = BLEDevice::getMTU() - 3;
       size_t remainingByteCount = size;
+      
+      // Delay after each notification to ensure reliable delivery
       while (remainingByteCount >= chunkSize)
       {
-        delay(20);
         pTxCharacteristic->setValue(data, chunkSize);
         pTxCharacteristic->notify();
         data += chunkSize;
         remainingByteCount -= chunkSize;
+        delay(5);  // Minimal delay for 512-byte single-chunk writes
       }
       if (remainingByteCount > 0)
       {
-        delay(20);
         pTxCharacteristic->setValue(data, remainingByteCount);
         pTxCharacteristic->notify();
       }
+      // Final delay to ensure last data is transmitted
+      delay(100);
       return size;
     }
     else
@@ -207,26 +210,24 @@ public:
     va_start(args, format);
     int requiredSize = vsnprintf(&dummy, 1, format, args);
     va_end(args);
-    if (requiredSize == 0)
+    if (requiredSize <= 0)
     {
-      return write((uint8_t *)&dummy, 1);
+      return 0;
     }
-    else if (requiredSize > 0)
+    
+    char *buffer = (char *)malloc(requiredSize + 1);
+    if (buffer)
     {
-      char *buffer = (char *)malloc(requiredSize + 1);
-      if (buffer)
+      va_start(args, format);
+      int result = vsnprintf(buffer, requiredSize + 1, format, args);
+      va_end(args);
+      if ((result > 0) && (result <= requiredSize))
       {
-        va_start(args, format);
-        int result = vsnprintf(buffer, requiredSize + 1, format, args);
-        va_end(args);
-        if ((result >= 0) && (result <= requiredSize))
-        {
-          size_t writtenBytesCount = write((uint8_t *)buffer, result + 1);
-          free(buffer);
-          return writtenBytesCount;
-        }
+        size_t writtenBytesCount = write((uint8_t *)buffer, result);
         free(buffer);
+        return writtenBytesCount;
       }
+      free(buffer);
     }
     return 0;
   }

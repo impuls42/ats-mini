@@ -644,12 +644,14 @@ int serialDoCommand(Stream *stream, RemoteState *state, uint8_t usbMode)
   if (state->rpcMode)
   {
     CborRpcWriter writer = {stream, cborRpcSendFrameStream};
-    cborRpcConsumeStream(stream, state, &writer);
+    if (cborRpcConsumeStream(stream, state, &writer))
+      state->lastRxTime = millis();
     return 0;
   }
 
   if (Serial.available())
   {
+    state->lastRxTime = millis();
     uint8_t key = Serial.read();
     if (key == CBOR_RPC_SWITCH)
     {

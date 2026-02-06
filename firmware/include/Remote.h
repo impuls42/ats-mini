@@ -3,6 +3,7 @@
 
 typedef struct {
   uint32_t remoteTimer = 0;
+  uint32_t lastRxTime = 0;
   uint8_t remoteSeqnum = 0;
   bool remoteLogOn = false;
   bool rpcMode = false;

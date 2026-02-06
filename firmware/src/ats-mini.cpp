@@ -105,8 +105,8 @@ int8_t getSerialStatus()
   if (usbModeIdx == USB_OFF)
     return 0;
 
-  // Show as connected if activity within last 3 seconds
-  if ((millis() - remoteSerialState.remoteTimer) < 3000)
+  // Show as connected if data received within last 3 seconds
+  if ((millis() - remoteSerialState.lastRxTime) < 3000)
     return 1;
 
   return -1;

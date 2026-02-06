@@ -12,5 +12,16 @@
 			".venv/bin/python3": true,
 			"pytest": true
 		}
+	},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "ensure boot",
+				"type": "shell",
+				"command": "${workspaceFolder}/.venv/bin/python3 tools/wait_monitor.py",
+				"problemMatcher": []
+			}
+		]
 	}
 }

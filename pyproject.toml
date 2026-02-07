@@ -12,11 +12,11 @@ dependencies = [
   "pre-commit",
 ]
 
-[project.optional-dependencies]
-dev = ["platformio", "pytest", "pytest-asyncio", "cbor2", "pyserial", "websockets"]
+[dependency-groups]
+dev = ["platformio", "pytest", "pytest-asyncio", "cbor2", "pyserial", "websockets", "ats-sdk @ file:///home/zisen/Documents/ats-mini/sdk", "ats-cli @ file:///home/zisen/Documents/ats-mini/client"]
 docs = ["sphinx", "furo", "myst_parser", "sphinx-autobuild"]
-test = ["pytest", "pytest-asyncio"]
-rpc = ["pytest", "cbor2", "pyserial", "websockets"]
+test = ["pytest", "pytest-asyncio", "ats-sdk @ file:///home/zisen/Documents/ats-mini/sdk"]
+rpc = ["pytest", "cbor2", "pyserial", "websockets", "ats-sdk @ file:///home/zisen/Documents/ats-mini/sdk"]
 
 [tool.setuptools]
 packages = []

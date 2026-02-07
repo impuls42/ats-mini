@@ -38,9 +38,15 @@ class Radio:
     ) -> Dict[str, Any]:
         req_id = await self._t.request(method, params)
         reply = await self._t.read_response(req_id, timeout=timeout)
-        if "error" in reply:
-            err = reply["error"]
-            raise RpcError(err.get("code", -1), err.get("message", "unknown"))
+        err = reply.get("error")
+        if err is not None:
+            if isinstance(err, dict):
+                code = err.get("code", -1)
+                message = err.get("message", "unknown")
+            else:
+                code = -1
+                message = str(err)
+            raise RpcError(code, message)
         return reply.get("result", {})
 
     # -- bulk --

@@ -1,0 +1,1 @@
+Fixed BLE CBOR-RPC frame synchronization issues by combining header and payload into single write operation, and updated Bleak API compatibility (replaced deprecated `get_services()` with `services` property for Bleak v0.21.0+).

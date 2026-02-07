@@ -314,7 +314,7 @@ class ATSMiniTerminal(cmd.Cmd):
             print(f"Capturing screen as {fmt}...")
             req_id = self.client.request("screen.capture", {"format": fmt})
             resp = self.client.read_response(req_id)
-            
+
             if "error" in resp:
                 print(f"✗ Error: {resp['error']}")
                 return
@@ -326,7 +326,7 @@ class ATSMiniTerminal(cmd.Cmd):
                 if not msg:
                     print("✗ Timeout waiting for screen data")
                     return
-                
+
                 if msg.get("type") == "event":
                     if msg.get("event") == "screen.chunk":
                         chunk = msg.get("params", {}).get("data", b"")
@@ -361,7 +361,7 @@ class ATSMiniTerminal(cmd.Cmd):
                 if "error" in resp:
                     print(f"✗ Error: {resp['error']}")
                     return
-                
+
                 self.event_running = True
                 self.event_thread = threading.Thread(target=self._event_loop, daemon=True)
                 self.event_thread.start()
@@ -420,7 +420,7 @@ class ATSMiniTerminal(cmd.Cmd):
                 if msg and msg.get("type") == "event":
                     event = msg.get("event")
                     params = msg.get("params", {})
-                    
+
                     if event == "stats":
                         # Compact stats display
                         freq = params.get("freq", "?")
@@ -459,7 +459,7 @@ def main():
     args = parser.parse_args()
 
     terminal = ATSMiniTerminal()
-    
+
     # Auto-connect if specified
     if args.serial:
         terminal.do_connect(f"serial {args.serial}")

@@ -119,7 +119,7 @@ class AsyncRpcTransport(ABC):
         """
         frame = await self.read_frame(timeout)
         payload = decode_frame(frame)
-        
+
         try:
             message = cbor2.loads(payload)
         except Exception as e:

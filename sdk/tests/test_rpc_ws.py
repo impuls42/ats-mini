@@ -35,4 +35,3 @@ async def test_ws_status_get():
         result = reply.get("result", {})
         assert "band" in result
         assert "mode" in result
-

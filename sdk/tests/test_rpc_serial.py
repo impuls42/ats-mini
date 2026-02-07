@@ -323,4 +323,3 @@ async def test_invalid_setting_value():
         with pytest.raises((RpcError, ValueError)):  # ValueError if CBOR decode fails
             await radio.set_theme(255)
         log.info("✓ test_invalid_setting_value passed")
-

@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-import sys
 from typing import Optional
 
 from bleak import BleakClient, BleakScanner
@@ -72,16 +71,16 @@ class AsyncBleRpc(AsyncRpcTransport):
         self.logger.info(f"Connected to {device.name}")
 
         # Discover services and characteristics
-        services = self._client.services
+        services = await self._client.get_services()
 
         # Log all available services and characteristics for debugging
-        print(f"\n=== BLE Services on '{device.name}' ===", file=sys.stderr)
+        self.logger.debug(f"=== BLE Services on '{device.name}' ===")
         for service in services:
-            print(f"  Service: {service.uuid}", file=sys.stderr)
+            self.logger.debug(f"  Service: {service.uuid}")
             for char in service.characteristics:
                 props = ", ".join(char.properties)
-                print(f"    → Characteristic: {char.uuid} ({props})", file=sys.stderr)
-        print("=" * 50 + "\n", file=sys.stderr)
+                self.logger.debug(f"    → Characteristic: {char.uuid} ({props})")
+        self.logger.debug("=" * 50)
 
         self._tx_char = services.get_characteristic(NUS_TX_CHAR_UUID)
         self._rx_char = services.get_characteristic(NUS_RX_CHAR_UUID)

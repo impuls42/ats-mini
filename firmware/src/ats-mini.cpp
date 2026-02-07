@@ -230,6 +230,18 @@ void setup()
       ;
   }
 
+  // Initialize RemoteState buffers in PSRAM
+  if (!remoteStateInit(&remoteSerialState) || !remoteStateInit(&remoteBLEState))
+  {
+    ledcWrite(LCD_BL_CH, 255); // Default value 255 = 100%
+    tft.setTextSize(2);
+    tft.setTextColor(TH.text_warn, TH.bg);
+    tft.println("Failed to allocate RPC buffers");
+    tft.println("(insufficient PSRAM)");
+    while (1)
+      ;
+  }
+
   // Check for SI4732 connected on I2C interface
   // If the SI4732 is not detected, then halt with no further processing
   rx.setI2CFastModeCustom(800000UL);

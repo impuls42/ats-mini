@@ -93,6 +93,12 @@ static RpcWsClient *rpcEnsureClient(uint32_t id)
       rpcClients[i].active = true;
       rpcClients[i].id = id;
       rpcClients[i].state = RemoteState();
+      if (!remoteStateInit(&rpcClients[i].state))
+      {
+        ets_printf("ERROR: Failed to initialize WebSocket client state\n");
+        rpcClients[i].active = false;
+        return nullptr;
+      }
       rpcClients[i].state.rpcMode = true;
       rpcClients[i].state.remoteTimer = millis();
       return &rpcClients[i];
@@ -107,6 +113,7 @@ static void rpcRemoveClient(uint32_t id)
   {
     if (rpcClients[i].active && rpcClients[i].id == id)
     {
+      remoteStateFree(&rpcClients[i].state);
       rpcClients[i].active = false;
       rpcClients[i].id = 0;
     }

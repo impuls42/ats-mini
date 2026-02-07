@@ -7,7 +7,6 @@ This guide covers setting up the ATS-Mini project on your machine.
 - **Python** 3.12+
 - **Git**
 - **PlatformIO IDE** VS Code extension (or PlatformIO Core CLI)
-- **arduino-cli** (if using Make commands directly)
 
 ## Initial Setup
 
@@ -116,7 +115,7 @@ pytest                          # Run tests
 ```bash
 cd client
 pip install -e .
-atsmini-terminal                # Run CLI
+atsmini                         # Run CLI
 ```
 
 ## Project Structure

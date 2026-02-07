@@ -7,6 +7,35 @@
 #include "Compression.h"
 #include "CborRpc.h"
 
+//
+// RemoteState initialization/cleanup (PSRAM allocation)
+//
+
+bool remoteStateInit(RemoteState *state)
+{
+  if (state->rpcBuf)
+    return true; // Already initialized
+
+  state->rpcBuf = (uint8_t *)ps_malloc(4096);
+  if (!state->rpcBuf)
+  {
+    ets_printf("ERROR: Failed to allocate rpcBuf in PSRAM\n");
+    return false;
+  }
+
+  memset(state->rpcBuf, 0, 4096);
+  return true;
+}
+
+void remoteStateFree(RemoteState *state)
+{
+  if (state->rpcBuf)
+  {
+    free(state->rpcBuf);
+    state->rpcBuf = nullptr;
+  }
+}
+
 static uint8_t char2nibble(char key)
 {
   if ((key >= '0') && (key <= '9'))

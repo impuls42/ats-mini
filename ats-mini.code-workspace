@@ -10,7 +10,8 @@
 			"pio": true,
 			"~/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-addr2line": true,
 			".venv/bin/python3": true,
-			"pytest": true
+			"pytest": true,
+			"make": true
 		}
 	},
 	"tasks": {

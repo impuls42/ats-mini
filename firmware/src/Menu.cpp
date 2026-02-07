@@ -275,6 +275,9 @@ static const char *usbModeDesc[] =
     {"Off", "Ad hoc"};
 
 int getTotalUSBModes() { return (ITEM_COUNT(usbModeDesc)); }
+int getTotalSleepModes() { return (ITEM_COUNT(sleepModeDesc)); }
+int getTotalRDSModes() { return (ITEM_COUNT(rdsMode)); }
+int getTotalUILayouts() { return (ITEM_COUNT(uiLayoutDesc)); }
 
 //
 // Bluetooth Mode Menu
@@ -293,6 +296,8 @@ int getTotalBleModes() { return (ITEM_COUNT(bleModeDesc)); }
 uint8_t wifiModeIdx = NET_OFF;
 static const char *wifiModeDesc[] =
     {"Off", "AP Only", "AP+Connect", "Connect", "Sync Only"};
+
+int getTotalWiFiModes() { return (ITEM_COUNT(wifiModeDesc)); }
 
 //
 // Step Menu
@@ -353,6 +358,8 @@ static int getLastStep(int mode)
 
   return (0);
 }
+
+int getTotalSteps() { return (getLastStep(currentMode) + 1); }
 
 const Step *getCurrentStep()
 {
@@ -445,6 +452,8 @@ static int getLastBandwidth(int mode)
 
   return (0);
 }
+
+int getTotalBandwidths() { return (getLastBandwidth(currentMode) + 1); }
 
 const Bandwidth *getCurrentBandwidth()
 {
@@ -565,12 +574,12 @@ static void clickScan(bool shortPress)
     currentCmd = CMD_NONE;
 }
 
-static void doTheme(int16_t enc)
+void doTheme(int16_t enc)
 {
   themeIdx = wrap_range(themeIdx, enc, 0, getTotalThemes() - 1);
 }
 
-static void doUILayout(int16_t enc)
+void doUILayout(int16_t enc)
 {
   uiLayoutIdx = uiLayoutIdx > LAST_ITEM(uiLayoutDesc) ? UI_DEFAULT : wrap_range(uiLayoutIdx, enc, 0, LAST_ITEM(uiLayoutDesc));
 }
@@ -625,29 +634,29 @@ void doBrt(int16_t enc)
     ledcWrite(LCD_BL_CH, currentBrt);
 }
 
-static void doSleep(int16_t enc)
+void doSleep(int16_t enc)
 {
   currentSleep = clamp_range(currentSleep, 5 * enc, 0, 255);
 }
 
-static void doSleepMode(int16_t enc)
+void doSleepMode(int16_t enc)
 {
   sleepModeIdx = wrap_range(sleepModeIdx, enc, 0, LAST_ITEM(sleepModeDesc));
 }
 
-static void doUSBMode(int16_t enc)
+void doUSBMode(int16_t enc)
 {
   usbModeIdx = wrap_range(usbModeIdx, enc, 0, LAST_ITEM(usbModeDesc));
 }
 
-static void doBleMode(int16_t enc)
+void doBleMode(int16_t enc)
 {
   uint8_t newBleModeIdx = wrap_range(bleModeIdx, enc, 0, LAST_ITEM(bleModeDesc));
   bleInit(newBleModeIdx);
   bleModeIdx = newBleModeIdx;
 }
 
-static void doWiFiMode(int16_t enc)
+void doWiFiMode(int16_t enc)
 {
   wifiModeIdx = wrap_range(wifiModeIdx, enc, 0, LAST_ITEM(wifiModeDesc));
 }
@@ -658,28 +667,35 @@ static void clickWiFiMode(uint8_t mode, bool shortPress)
   netInit(mode);
 }
 
-static void doRDSMode(int16_t enc)
+void doRDSMode(int16_t enc)
 {
   rdsModeIdx = wrap_range(rdsModeIdx, enc, 0, LAST_ITEM(rdsMode));
   if (!(getRDSMode() & RDS_CT))
     clockReset();
 }
 
-static void doUTCOffset(int16_t enc)
+void doUTCOffset(int16_t enc)
 {
   utcOffsetIdx = wrap_range(utcOffsetIdx, enc, 0, LAST_ITEM(utcOffsets));
   clockRefreshTime();
 }
 
-static void doZoom(int16_t enc)
+void doZoom(int16_t enc)
 {
   zoomMenu = !zoomMenu;
 }
 
-static void doScrollDir(int16_t enc)
+void doScrollDir(int16_t enc)
 {
   scrollDirection = (scrollDirection == 1) ? -1 : 1;
 }
+
+const char *getSleepModeDesc(uint8_t idx) { return idx <= LAST_ITEM(sleepModeDesc) ? sleepModeDesc[idx] : ""; }
+const char *getUILayoutDesc(uint8_t idx) { return idx <= LAST_ITEM(uiLayoutDesc) ? uiLayoutDesc[idx] : ""; }
+const char *getUSBModeDesc(uint8_t idx) { return idx <= LAST_ITEM(usbModeDesc) ? usbModeDesc[idx] : ""; }
+const char *getBLEModeDesc(uint8_t idx) { return idx <= LAST_ITEM(bleModeDesc) ? bleModeDesc[idx] : ""; }
+const char *getWiFiModeDesc(uint8_t idx) { return idx <= LAST_ITEM(wifiModeDesc) ? wifiModeDesc[idx] : ""; }
+const char *getRDSModeDesc(uint8_t idx) { return idx <= LAST_ITEM(rdsMode) ? rdsMode[idx].desc : ""; }
 
 uint8_t doAbout(int16_t enc)
 {

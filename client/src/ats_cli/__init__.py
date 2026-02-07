@@ -1,7 +1,7 @@
 """ATS-Mini CLI Terminal Client."""
 
-from .terminal import ATSMiniTerminal, main
+from .tui import ATSMiniTUI, main
 
-__all__ = ["ATSMiniTerminal", "main"]
+__all__ = ["ATSMiniTUI", "main"]
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

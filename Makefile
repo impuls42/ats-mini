@@ -1,4 +1,4 @@
-.PHONY: help build upload monitor clean
+.PHONY: help build upload monitor clean debug debug-build debug-upload
 
 PROFILE ?= esp32s3-ospi
 PORT ?= /dev/cu.usbmodem1101
@@ -20,6 +20,11 @@ help:
 	@echo "  make monitor   - Open serial monitor"
 	@echo "  make clean     - Clean build artifacts"
 	@echo ""
+	@echo "Debug Targets:"
+	@echo "  make debug-build  - Build firmware with debug symbols"
+	@echo "  make debug-upload - Build and upload debug firmware"
+	@echo "  make debug        - Start debugging session (VSCode/CLI)"
+	@echo ""
 	@echo "Options:"
 	@echo "  PROFILE=esp32s3-ospi  - OPI PSRAM (default)"
 	@echo "  PROFILE=esp32s3-qspi  - QSPI PSRAM"
@@ -32,6 +37,7 @@ help:
 	@echo "  make build PROFILE=esp32s3-qspi"
 	@echo "  make upload PORT=/dev/cu.usbmodem1101"
 	@echo "  make build DEBUG_LEVEL=1 HALF_STEP=1"
+	@echo "  make debug-build PROFILE=esp32s3-qspi"
 	@echo ""
 
 build:
@@ -50,3 +56,17 @@ clean:
 	@echo "Cleaning build artifacts..."
 	$(PIO) run -t clean
 	rm -rf build/
+
+# Debug targets
+debug-build:
+	@echo "Building debug: $(PROFILE)-debug [$(BUILD_FLAGS)]"
+	$(PIO) run -e $(PROFILE)-debug
+
+debug-upload: debug-build
+	@echo "Uploading debug build to $(PORT)"
+	$(PIO) run -e $(PROFILE)-debug -t upload --upload-port $(PORT)
+
+debug:
+	@echo "Starting debug session for $(PROFILE)-debug on $(PORT)"
+	@echo "Use VSCode 'Run and Debug' panel or:"
+	$(PIO) debug -e $(PROFILE)-debug --interface=gdb -x .piodebugger/launch.gdb

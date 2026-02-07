@@ -112,6 +112,8 @@ int getTotalMemories();
 Band *getCurrentBand();
 uint8_t getFreqInputPos();
 int getFreqInputStep();
+int getTotalSteps();
+int getTotalBandwidths();
 const Step *getCurrentStep();
 const Bandwidth *getCurrentBandwidth();
 uint8_t getRDSMode();
@@ -132,5 +134,30 @@ void doCal(int16_t enc);
 void doStep(int16_t enc);
 void doMode(int16_t enc);
 void doBand(int16_t enc);
+void doSquelch(int16_t enc);
+void doTheme(int16_t enc);
+void doUILayout(int16_t enc);
+void doSleep(int16_t enc);
+void doSleepMode(int16_t enc);
+void doUSBMode(int16_t enc);
+void doBleMode(int16_t enc);
+void doWiFiMode(int16_t enc);
+void doRDSMode(int16_t enc);
+void doUTCOffset(int16_t enc);
+void doZoom(int16_t enc);
+void doScrollDir(int16_t enc);
+
+int getTotalUSBModes();
+int getTotalWiFiModes();
+int getTotalSleepModes();
+int getTotalRDSModes();
+int getTotalUILayouts();
+
+const char *getSleepModeDesc(uint8_t idx);
+const char *getUILayoutDesc(uint8_t idx);
+const char *getUSBModeDesc(uint8_t idx);
+const char *getBLEModeDesc(uint8_t idx);
+const char *getWiFiModeDesc(uint8_t idx);
+const char *getRDSModeDesc(uint8_t idx);
 
 #endif // MENU_H

@@ -5,6 +5,7 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
+#include <string>
 #include <freertos/semphr.h>
 
 #include "Remote.h"
@@ -27,7 +28,7 @@ private:
 
   // Data handling
   SemaphoreHandle_t dataConsumedSem;
-  String incomingPacket;
+  std::string incomingPacket;
   size_t unreadByteCount = 0;
 
   // Device attributes
@@ -62,6 +63,8 @@ public:
     pService = pServer->createService(NORDIC_UART_SERVICE_UUID);
     // Use NOTIFY with retry logic for high-throughput reliable delivery
     pTxCharacteristic = pService->createCharacteristic(NORDIC_UART_CHARACTERISTIC_UUID_TX, BLECharacteristic::PROPERTY_NOTIFY);
+    // Add CCCD descriptor so clients can enable notifications
+    pTxCharacteristic->addDescriptor(new BLE2902());
     pTxCharacteristic->setCallbacks(this); // onSubscribe/onStatus
     pRxCharacteristic = pService->createCharacteristic(NORDIC_UART_CHARACTERISTIC_UUID_RX, BLECharacteristic::PROPERTY_WRITE);
     pRxCharacteristic->setCallbacks(this); // onWrite
@@ -122,8 +125,8 @@ public:
 
       // Hold data until next read
       std::string value = pCharacteristic->getValue();
-      incomingPacket = String(value.c_str()); // Convert std::string to Arduino String
-      unreadByteCount = incomingPacket.length();
+      incomingPacket.assign(value.begin(), value.end());
+      unreadByteCount = incomingPacket.size();
     }
   }
 
@@ -141,8 +144,8 @@ public:
   {
     if (unreadByteCount > 0)
     {
-      size_t index = incomingPacket.length() - unreadByteCount;
-      return incomingPacket[index];
+      size_t index = incomingPacket.size() - unreadByteCount;
+      return static_cast<uint8_t>(incomingPacket[index]);
     }
     return -1;
   }
@@ -151,8 +154,8 @@ public:
   {
     if (unreadByteCount > 0)
     {
-      size_t index = incomingPacket.length() - unreadByteCount;
-      int result = incomingPacket[index];
+      size_t index = incomingPacket.size() - unreadByteCount;
+      int result = static_cast<uint8_t>(incomingPacket[index]);
       unreadByteCount--;
       if (unreadByteCount == 0 && dataConsumedSem != nullptr)
       {

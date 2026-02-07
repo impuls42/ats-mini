@@ -3,7 +3,6 @@
         "**/__pycache__": true,
         "**/.pytest_cache": true,
         "**/*.egg-info": true,
-        ".pio": true,
         ".git": true
     },
     "python.linting.enabled": true,

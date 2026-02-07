@@ -1,7 +1,8 @@
-.PHONY: help build upload monitor clean debug debug-build debug-upload
+.PHONY: help build upload fullflash monitor clean debug debug-build debug-upload
 
 PROFILE ?= esp32s3-ospi
-PORT ?= /dev/cu.usbmodem1101
+ATSMINI_PORT ?= /dev/cu.usbmodem1101
+PORT ?= $(ATSMINI_PORT)
 DEBUG_LEVEL ?= 0
 PIO = pio
 
@@ -17,6 +18,7 @@ help:
 	@echo "Targets:"
 	@echo "  make build     - Build firmware"
 	@echo "  make upload    - Build and upload to device"
+	@echo "  make fullflash - Build and upload full flash image (use after erase-flash)"
 	@echo "  make monitor   - Open serial monitor"
 	@echo "  make clean     - Clean build artifacts"
 	@echo ""
@@ -47,6 +49,10 @@ build:
 upload: build
 	@echo "Uploading to $(PORT)"
 	$(PIO) run -e $(PROFILE) -t upload --upload-port $(PORT)
+
+fullflash: build
+	@echo "Full flash to $(PORT) (--no-stub, 115200 baud)"
+	$(PIO) run -e $(PROFILE) -t fullflash --upload-port $(PORT)
 
 monitor:
 	@echo "Monitor: $(PORT) @ 115200"

@@ -6,11 +6,27 @@ import glob
 import serial
 
 def get_serial_port():
-    # Look for the port ESP32-S3 usually shows up as on macOS
+    # Check environment variables first
+    port = os.getenv('ATSMINI_PORT') or os.getenv('ESPTOOL_PORT')
+    if port:
+        return port
+    
+    # Auto-detect: Look for the port ESP32-S3 usually shows up as on macOS
     # Prioritize cu.usbmodem for macOS as it doesn't block on DCD
     ports = glob.glob('/dev/cu.usbmodem*')
     if ports:
         return ports[0]
+    
+    # Try Linux patterns
+    ports = glob.glob('/dev/ttyUSB*') + glob.glob('/dev/ttyACM*')
+    if ports:
+        return ports[0]
+    
+    # Try by-id pattern (works on Linux, including Raspberry Pi)
+    ports = glob.glob('/dev/serial/by-id/*')
+    if ports:
+        return ports[0]
+    
     return None
 
 def main():

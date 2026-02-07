@@ -5,7 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'ats-mini/**'
+      - 'firmware/**'
+      - 'platformio.ini'
       - 'changelog/**'
       - 'CHANGELOG.md'
       - '.github/workflows/build.yml'
@@ -16,7 +17,8 @@ on:
     # branches:
     #   - main
     paths:
-      - 'ats-mini/**'
+      - 'firmware/**'
+      - 'platformio.ini'
       - 'changelog/**'
       - 'CHANGELOG.md'
       - '.github/workflows/build.yml'
@@ -38,12 +40,10 @@ jobs:
       matrix:
         board:
           - profile: esp32s3-ospi
-            # If you change this line, change it in sketch.yaml as well
-            fqbn: esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=8M,PSRAM=opi,CPUFreq=80,USBMode=hwcdc,FlashMode=qio,PartitionScheme=custom,DebugLevel=none
+            env: esp32s3-ospi
             artifact-suffix: ospi
           - profile: esp32s3-qspi
-            # If you change this line, change it in sketch.yaml as well
-            fqbn: esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=8M,PSRAM=enabled,CPUFreq=80,USBMode=hwcdc,FlashMode=qio,PartitionScheme=custom,DebugLevel=none
+            env: esp32s3-qspi
             artifact-suffix: qspi
 
     outputs:
@@ -62,27 +62,30 @@ jobs:
         run: |
           echo "slug=$(git describe --tags --match 'v?.??' --always --dirty || echo v0.00)" >> "$GITHUB_OUTPUT"
 
-      - name: Compile firmware
-        uses: arduino/compile-sketches@v1
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          sketch-paths: |
-            - ats-mini
-          fqbn: ${{ matrix.board.fqbn }}
-          cli-compile-flags: |
-            - --profile
-            - ${{ matrix.board.profile }}
-            - --export-binaries
-          # Disabled to prevent building artifact for a previous commit
-          enable-deltas-report: false
-          enable-warnings-report: true
+          python-version: '3.x'
 
-      - name: Save sketches report artifact
+      - name: Install PlatformIO
+        run: |
+          pip install --upgrade platformio esptool
+          pio --version
+          esptool version
+
+      - name: Compile firmware
+        run: |
+          pio run -e ${{ matrix.board.env }}
+
+      - name: Save build logs
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          if-no-files-found: error
-          path: sketches-reports
-          name: sketches-report-${{ matrix.board.artifact-suffix }}
+          if-no-files-found: ignore
+          name: build-logs-${{ matrix.board.artifact-suffix }}
+          path: |
+            .pio/build/${{ matrix.board.env }}/idedata.json
+            .pio/build/${{ matrix.board.env }}/compile_commands.json
 
       - name: Install uv and python
         uses: astral-sh/setup-uv@v5
@@ -96,11 +99,32 @@ jobs:
           # shellcheck disable=SC2015
           ls changelog/*.md && uv run towncrier build --keep --version Unreleased || true
 
+      - name: Create merged firmware
+        run: |
+          # Create merged binary at offset 0x0 (bootloader + partitions + firmware)
+          esptool \
+            --chip esp32s3 \
+            merge-bin \
+            -o .pio/build/${{ matrix.board.env }}/firmware.merged.bin \
+            --flash-mode keep \
+            --flash-size 8MB \
+            0x0 .pio/build/${{ matrix.board.env }}/bootloader.bin \
+            0x8000 .pio/build/${{ matrix.board.env }}/partitions.bin \
+            0x10000 .pio/build/${{ matrix.board.env }}/firmware.bin
+
       - name: Prepare compiled artifact
         run: |
-          mkdir -p artifact/ats-mini-${{ steps.slug.outputs.slug }}-${{ matrix.board.artifact-suffix }}
-          mv ats-mini/build/esp32.esp32.esp32s3/*.ino.bin ats-mini/build/esp32.esp32.esp32s3/*.ino.*.bin artifact/ats-mini-${{ steps.slug.outputs.slug }}-${{ matrix.board.artifact-suffix }}/
-          cp CHANGELOG.md artifact/ats-mini-${{ steps.slug.outputs.slug }}-${{ matrix.board.artifact-suffix }}/
+          BUILD_DIR=".pio/build/${{ matrix.board.env }}"
+          ARTIFACT_DIR="artifact/ats-mini-${{ steps.slug.outputs.slug }}-${{ matrix.board.artifact-suffix }}"
+          mkdir -p "$ARTIFACT_DIR"
+
+          # Copy firmware files
+          cp "$BUILD_DIR/firmware.bin" "$ARTIFACT_DIR/"
+          cp "$BUILD_DIR/firmware.elf" "$ARTIFACT_DIR/"
+          cp "$BUILD_DIR/bootloader.bin" "$ARTIFACT_DIR/"
+          cp "$BUILD_DIR/partitions.bin" "$ARTIFACT_DIR/"
+          cp "$BUILD_DIR/firmware.merged.bin" "$ARTIFACT_DIR/"
+          cp CHANGELOG.md "$ARTIFACT_DIR/"
 
       - name: Upload compiled artifact
         uses: actions/upload-artifact@v4

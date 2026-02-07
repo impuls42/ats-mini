@@ -40,6 +40,9 @@ make build PROFILE=esp32s3-qspi
 # Upload to device
 make upload PORT=/dev/cu.usbmodem1101
 
+# Full flash (merges bootloader+partitions+firmware, uses --no-stub at 115200 baud)
+make fullflash PORT=/dev/cu.usbmodem1101
+
 # Monitor serial output
 make monitor PORT=/dev/cu.usbmodem1101
 
@@ -48,6 +51,8 @@ lsusb
 ```
 
 **Note**: Test device has **QSPI 2MB PSRAM** - always use `PROFILE=esp32s3-qspi` for this hardware.
+
+**Upload uses `--no-stub`**: All uploads bypass the esptool stub flasher (`upload_flags = --no-stub` in platformio.ini) because the stub's baud rate change is unreliable over the native USB-JTAG interface. Use `fullflash` after `esptool erase-flash` or on empty flash - it writes a single merged binary at 0x0.
 
 ### Testing
 
@@ -245,6 +250,15 @@ echo "Fixed menu bounds checking" > changelog/287.fixed.md
 ```
 
 **Filename format**: `+description.type.md` or `123.type.md` (issue number)
+
+## Agent Workflow
+
+**Always verify your changes.** After modifying firmware or SDK code:
+- **Firmware**: Run `make build PROFILE=esp32s3-qspi` to confirm it compiles. If the device is connected (`lsusb`), upload and check serial output with `make monitor`.
+- **Python/SDK**: Run the relevant tests or at minimum import the changed module to catch syntax errors.
+- **Build scripts / platformio.ini**: Run `make build PROFILE=esp32s3-qspi` to confirm the build system still works.
+
+Do not leave the user with untested changes. If a build or test fails, diagnose and fix the issue before reporting back.
 
 ## Contributing
 

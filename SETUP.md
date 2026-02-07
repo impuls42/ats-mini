@@ -36,10 +36,12 @@ pip install platformio
 
 **For full development (firmware + SDK + client):**
 ```bash
-pip install -e ".[dev]"
+pip install -e ".[dev]"       # Core tools
+pip install -e sdk            # CBOR-RPC SDK
+pip install -e client         # CLI terminal
 ```
 
-**For docs:**
+**For documentation:**
 ```bash
 pip install -e ".[docs]"
 ```

@@ -71,7 +71,7 @@ class AsyncBleRpc(AsyncRpcTransport):
         self.logger.info(f"Connected to {device.name}")
 
         # Discover services and characteristics
-        services = await self._client.get_services()
+        services = self._client.services
 
         # Log all available services and characteristics for debugging
         self.logger.debug(f"=== BLE Services on '{device.name}' ===")

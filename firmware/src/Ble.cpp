@@ -7,14 +7,27 @@
 static bool cborRpcSendFrameStream(void *ctx, const uint8_t *data, size_t len)
 {
   Stream *stream = (Stream *)ctx;
-  uint8_t header[4] = {
-      (uint8_t)((len >> 24) & 0xFF),
-      (uint8_t)((len >> 16) & 0xFF),
-      (uint8_t)((len >> 8) & 0xFF),
-      (uint8_t)(len & 0xFF)};
-  stream->write(header, sizeof(header));
-  stream->write(data, len);
+
+  // Combine header and payload into single buffer to avoid BLE packet reordering
+  size_t totalLen = 4 + len;
+  uint8_t *buffer = (uint8_t *)malloc(totalLen);
+  if (!buffer)
+    return false;
+
+  // Write 4-byte length header (big-endian)
+  buffer[0] = (uint8_t)((len >> 24) & 0xFF);
+  buffer[1] = (uint8_t)((len >> 16) & 0xFF);
+  buffer[2] = (uint8_t)((len >> 8) & 0xFF);
+  buffer[3] = (uint8_t)(len & 0xFF);
+
+  // Copy payload
+  memcpy(buffer + 4, data, len);
+
+  // Send as single write to prevent BLE notification reordering
+  stream->write(buffer, totalLen);
   stream->flush();
+
+  free(buffer);
   return true;
 }
 

@@ -10,59 +10,59 @@ def get_serial_port():
     port = os.getenv('ATSMINI_PORT') or os.getenv('ESPTOOL_PORT')
     if port:
         return port
-    
+
     # Auto-detect: Look for the port ESP32-S3 usually shows up as on macOS
     # Prioritize cu.usbmodem for macOS as it doesn't block on DCD
     ports = glob.glob('/dev/cu.usbmodem*')
     if ports:
         return ports[0]
-    
+
     # Try Linux patterns
     ports = glob.glob('/dev/ttyUSB*') + glob.glob('/dev/ttyACM*')
     if ports:
         return ports[0]
-    
+
     # Try by-id pattern (works on Linux, including Raspberry Pi)
     ports = glob.glob('/dev/serial/by-id/*')
     if ports:
         return ports[0]
-    
+
     return None
 
 def main():
     print("--- Wait-Reconnect Monitor ---")
-    
+
     first_connection = True
-    
+
     while True:
         print("Waiting for device serial port to become available...")
-        
+
         timeout = 30 # seconds
         start_time = time.time()
         port = None
-        
+
         while True:
             port = get_serial_port()
             if port:
                 print(f"Device detected at: {port}")
                 break
-            
+
             if time.time() - start_time > timeout:
                 print("Timed out waiting for device.")
                 sys.exit(1)
-                
+
             time.sleep(0.2)
-        
+
         # Brief settle time to let the OS register the device fully
         time.sleep(0.5)
-        
+
         print(f"Opening serial port {port}...")
-        
+
         try:
             # Open serial port
             # DTR=True is required for the ESP32-S3 'if(Serial)' check to pass
             ser = serial.Serial(port, 115200, timeout=1)
-            
+
             if first_connection:
                 print("Connected. Resetting device to capture boot logs...")
                 # Reset sequence (DTR=False/RTS=True -> Reset)
@@ -74,9 +74,9 @@ def main():
                 first_connection = False
             else:
                 print("Connected. Resuming monitoring...")
-            
+
             print(f"Monitoring {port} (Ctrl+C to exit)...")
-            
+
             last_data_time = time.time()
             timeout = 15.0
 
@@ -84,7 +84,7 @@ def main():
                 if time.time() - last_data_time > timeout:
                     print(f"\nNo output for {timeout} seconds. Exiting.")
                     return
-                
+
                 try:
                     if ser.in_waiting > 0:
                         line = ser.readline()
@@ -105,7 +105,7 @@ def main():
                     ser.close()
                     print("Attempting to reconnect...")
                     break  # Break to outer while loop to reconnect
-                    
+
         except KeyboardInterrupt:
             print("\nExiting...")
             sys.exit(0)

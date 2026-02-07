@@ -136,11 +136,11 @@ void start() {
   BLEDevice::init(deviceName);
   BLEDevice::setPower(ESP_PWR_LVL_N0);
   BLEDevice::getAdvertising()->setName(deviceName);
-  
+
   BLEDevice::setMTU(517);
   ble_gap_set_prefered_default_le_phy(BLE_GAP_LE_PHY_ANY_MASK, ...);
   ble_gap_write_sugg_def_data_len(251, (251 + 14) * 8);
-  
+
   pServer = BLEDevice::getServer();
   // ... rest of init
 }
@@ -152,10 +152,10 @@ void start() {
   BLEDevice::init(deviceName);
   BLEDevice::setPower(ESP_PWR_LVL_N0);
   BLEDevice::getAdvertising()->setName(deviceName);
-  
+
   BLEDevice::setMTU(517);  // Keep - controls chunk size for writes
   // Remove ble_gap_* calls - not available in BlueDroid
-  
+
   pServer = BLEDevice::createServer();
   // ... rest of init
 }

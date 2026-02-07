@@ -73,7 +73,7 @@ class AsyncBleRpc(AsyncRpcTransport):
 
         # Discover services and characteristics
         services = self._client.services
-        
+
         # Log all available services and characteristics for debugging
         print(f"\n=== BLE Services on '{device.name}' ===", file=sys.stderr)
         for service in services:
@@ -82,7 +82,7 @@ class AsyncBleRpc(AsyncRpcTransport):
                 props = ", ".join(char.properties)
                 print(f"    → Characteristic: {char.uuid} ({props})", file=sys.stderr)
         print("=" * 50 + "\n", file=sys.stderr)
-        
+
         self._tx_char = services.get_characteristic(NUS_TX_CHAR_UUID)
         self._rx_char = services.get_characteristic(NUS_RX_CHAR_UUID)
 
@@ -92,14 +92,14 @@ class AsyncBleRpc(AsyncRpcTransport):
             for service in services:
                 for char in service.characteristics:
                     all_chars.append(f"{char.uuid} ({', '.join(char.properties)})")
-            
+
             missing = []
             if self._tx_char is None:
                 missing.append(f"TX notify ({NUS_TX_CHAR_UUID})")
             if self._rx_char is None:
                 missing.append(f"RX write ({NUS_RX_CHAR_UUID})")
             missing_str = " and ".join(missing)
-            
+
             raise ConnectionError(
                 f"Nordic UART Service characteristics not found: {missing_str}. \n"
                 f"Available characteristics: {', '.join(all_chars) if all_chars else 'none'}. \n"

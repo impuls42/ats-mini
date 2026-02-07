@@ -348,4 +348,3 @@ class AsyncWebSocketRpc(AsyncRpcTransport):
             raise ValueError("Expected binary WebSocket message")
 
         return message
-

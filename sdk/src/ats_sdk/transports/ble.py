@@ -42,6 +42,7 @@ class AsyncBleRpc(AsyncRpcTransport):
         self._rx_event = asyncio.Event()
         self._disconnect_event = asyncio.Event()
         self._mtu = 517  # ESP32 default, effective payload is MTU-3
+        self._write_with_response = True
 
     async def connect(self) -> None:
         """Discover and connect to BLE device."""
@@ -105,6 +106,10 @@ class AsyncBleRpc(AsyncRpcTransport):
                 f"Ensure Bluetooth is set to 'Ad hoc' mode in Settings → Bluetooth on the ATS-Mini device."
             )
 
+        # Determine if the RX characteristic supports write-without-response
+        rx_props = set(self._rx_char.properties or [])
+        self._write_with_response = "write-without-response" not in rx_props
+
         # Subscribe to TX characteristic (notifications from device)
         await self._client.start_notify(
             self._tx_char,
@@ -164,7 +169,7 @@ class AsyncBleRpc(AsyncRpcTransport):
         await self._client.write_gatt_char(
             self._rx_char,
             data,
-            response=False  # Write without response for speed
+            response=self._write_with_response
         )
 
     async def write_frame(self, frame: bytes) -> None:

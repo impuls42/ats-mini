@@ -283,7 +283,7 @@ int getTotalUILayouts() { return (ITEM_COUNT(uiLayoutDesc)); }
 // Bluetooth Mode Menu
 //
 
-uint8_t bleModeIdx = BLE_ADHOC;
+uint8_t bleModeIdx = BLE_OFF;
 static const char *bleModeDesc[] =
     {"Off", "Ad hoc"};
 

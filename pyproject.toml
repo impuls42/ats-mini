@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "ats-mini"
 version = "0.00"
@@ -6,17 +10,16 @@ requires-python = ">=3.12"
 dependencies = [
   "towncrier",
   "pre-commit",
-  "sphinx",
-  "furo",
-  "myst_parser",
-  "sphinx-autobuild",
 ]
 
 [project.optional-dependencies]
+dev = ["platformio", "pytest", "pytest-asyncio", "cbor2", "pyserial", "websockets"]
+docs = ["sphinx", "furo", "myst_parser", "sphinx-autobuild"]
+test = ["pytest", "pytest-asyncio"]
 rpc = ["pytest", "cbor2", "pyserial", "websockets"]
 
-[project.scripts]
-atsmini-terminal = "atsmini_rpc.terminal:main"
+[tool.setuptools]
+packages = []
 
 [tool.uv]
 required-version = ">=0.6.8"

@@ -11,40 +11,70 @@ A short video tutorial on how to build a custom firmware version ([YouTube mirro
 
 ## Compiling the source code
 
-1. Install [Arduino CLI](https://arduino.github.io/arduino-cli/1.2/installation/).
-2. Go to the repository root folder
-3. Compile and flash the firmware
+This project uses [PlatformIO](https://platformio.org/) for building firmware. PlatformIO is available globally in the development environment.
+
+### Quick build commands
 
 ```shell
-arduino-cli compile --clean -e -p COM_PORT -u ats-mini
+# Build firmware (default profile: esp32s3-qspi from platformio.ini)
+make build
+
+# Build for OSPI variant (8MB PSRAM)
+make build PROFILE=esp32s3-ospi
+
+# Upload firmware to device
+make upload PORT=/dev/cu.usbmodem1101
+
+# Full flash (merged binary at 0x0, erases all settings)
+make fullflash PORT=/dev/cu.usbmodem1101
+
+# Monitor serial output
+make monitor PORT=/dev/cu.usbmodem1101
 ```
 
-When a library gets upgraded in the `sketch.yaml` project configuration file, it might be necessary to run the following commands to ensure that the Arduino CLI has the most current information about available platforms and libraries:
+### Using PlatformIO directly
 
 ```shell
-arduino-cli core update-index
-arduino-cli lib update-index
+# Build for specific environment
+pio run -e esp32s3-qspi
+
+# Upload firmware
+pio run -e esp32s3-qspi -t upload --upload-port /dev/cu.usbmodem1101
+
+# Monitor serial output
+pio device monitor --port /dev/cu.usbmodem1101
 ```
+
+### Available build environments
+
+Build profiles are defined in `platformio.ini`:
+
+- `esp32s3-ospi` - Release build for 8MB OPI PSRAM (default variant)
+- `esp32s3-qspi` - Release build for 2MB QSPI PSRAM (test device)
+- `esp32s3-ospi-debug` - Debug build for OPI PSRAM
+- `esp32s3-qspi-debug` - Debug build for QSPI PSRAM
+
+The default environment is set in `platformio.ini` with `default_envs = esp32s3-qspi`.
 
 ## Compile-time options
 
 The available options are:
 
 * `HALF_STEP` - enable encoder half-steps (useful for EC11E encoder)
+* `DEBUG` - enable debug logging (0=none, 1=verbose)
 
-To set an option, add the `--build-property` command line argument like this:
-
-```shell
-arduino-cli compile --build-property "compiler.cpp.extra_flags=-DHALF_STEP" --clean -e -p COM_PORT -u ats-mini
-```
-
-## Using the make command
-
-You can do all of the above using the `make` command as well:
+To set an option, use the Makefile variables or PlatformIO build flags:
 
 ```shell
-HALF_STEP=1 PORT=/dev/tty.usbmodem14401 make upload
+# Using Makefile
+HALF_STEP=1 make build PROFILE=esp32s3-qspi
+DEBUG_LEVEL=1 make build PROFILE=esp32s3-qspi
+
+# Using PlatformIO directly
+pio run -e esp32s3-qspi -DHALF_STEP -DDEBUG=1
 ```
+
+Build flags can also be permanently set in `platformio.ini` in the `build_flags` section.
 
 ## Debugging with OpenOCD
 

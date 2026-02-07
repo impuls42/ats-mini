@@ -22,12 +22,23 @@ To keep changes reviewable and reproducible, please use the Make targets below a
 
 2. **Full cycle test (hardware required)**
 
-	- `PORT=/dev/cu.usbmodem1101 ATSMINI_PORT=/dev/cu.usbmodem1101 LOGFILE=logs/full-test.log make full-test`
+	```bash
+	# Run all integration tests
+	ATSMINI_PORT=/dev/cu.usbmodem1101 pytest sdk/tests/
+	```
 
 3. **Protocol integration tests**
 
-	- Serial: `ATSMINI_PORT=/dev/cu.usbmodem1101 make test`
-	- WebSocket: `ATSMINI_WS_URL=ws://atsmini.local/rpc make test`
+	```bash
+	# Serial transport
+	ATSMINI_PORT=/dev/cu.usbmodem1101 pytest sdk/tests/test_rpc_serial.py
+
+	# WebSocket transport
+	ATSMINI_WS_URL=ws://atsmini.local/rpc pytest sdk/tests/test_rpc_ws.py
+
+	# BLE transport
+	pytest sdk/tests/test_rpc_ble.py
+	```
 
 ### Notes
 

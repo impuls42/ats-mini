@@ -25,8 +25,10 @@ Repository = "https://github.com/esp32-si4732/ats-mini"
 Issues = "https://github.com/esp32-si4732/ats-mini/issues"
 
 [tool.setuptools]
-packages = ["ats_sdk"]
 package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

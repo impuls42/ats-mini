@@ -94,6 +94,10 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "**/pyproject.toml"
 
+      - name: Install base dependencies
+        run: |
+          uv sync
+
       - name: Compile the unreleased changelog
         run: |
           # shellcheck disable=SC2015

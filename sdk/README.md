@@ -97,7 +97,7 @@ AsyncSerialRpc(port: str, baudrate: int = 115200, timeout: float = 1.0)
 ### AsyncWebSocketRpc
 
 ```python
-AsyncWebSocketRpc(url: str, timeout: float = 10.0)
+AsyncWebSocketRpc(url: str, timeout: float = 3.0)
 ```
 
 **Methods:**
@@ -109,14 +109,14 @@ AsyncWebSocketRpc(url: str, timeout: float = 10.0)
 
 **Parameters:**
 - `url` - WebSocket URL (e.g., `ws://atsmini.local/rpc`)
-- `timeout` - Connection timeout in seconds (default: 10.0)
+- `timeout` - Connection timeout in seconds (default: 3.0)
 
 **Note:** WebSocket transport does not require `switch_mode()` - it's always in CBOR-RPC mode.
 
 ### AsyncBleRpc
 
 ```python
-AsyncBleRpc(device_name: str = "ATS-Mini", scan_timeout: float = 10.0, timeout: float = 5.0)
+AsyncBleRpc(device_name: str = "ATS-Mini", scan_timeout: float = 10.0)
 ```
 
 **Methods:**
@@ -248,7 +248,6 @@ Serial and BLE transports require sending `0x1E` (SWITCH_BYTE) to activate CBOR-
 **Request Format:**
 ```python
 {
-    "jsonrpc": "2.0",
     "method": "volume.set",
     "params": {"value": 12},
     "id": 1
@@ -258,7 +257,6 @@ Serial and BLE transports require sending `0x1E` (SWITCH_BYTE) to activate CBOR-
 **Response Format:**
 ```python
 {
-    "jsonrpc": "2.0",
     "result": {"volume": 12},
     "id": 1
 }

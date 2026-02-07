@@ -28,24 +28,6 @@ static bool prevFrameValid = false;
 // Helper Functions
 // ============================================================================
 
-static void writeLe16(Stream *stream, uint16_t value)
-{
-  uint8_t data[2] = {
-      (uint8_t)(value & 0xFF),
-      (uint8_t)(value >> 8)};
-  stream->write(data, sizeof(data));
-}
-
-static void writeLe32(Stream *stream, uint32_t value)
-{
-  uint8_t data[4] = {
-      (uint8_t)(value & 0xFF),
-      (uint8_t)((value >> 8) & 0xFF),
-      (uint8_t)((value >> 16) & 0xFF),
-      (uint8_t)(value >> 24)};
-  stream->write(data, sizeof(data));
-}
-
 static void writeHeaderCompressed(Stream *stream, const char *magic, uint8_t flags,
                                   uint16_t width, uint16_t height,
                                   uint32_t rawSize, uint32_t payloadSize)

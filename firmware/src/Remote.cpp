@@ -33,6 +33,7 @@ static bool cborRpcSendFrameStream(void *ctx, const uint8_t *data, size_t len)
       (uint8_t)(len & 0xFF)};
   stream->write(header, sizeof(header));
   stream->write(data, len);
+  stream->flush();
   return true;
 }
 

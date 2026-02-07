@@ -4,18 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ats-cli"
-version = "0.1.0"
-description = "ATS-Mini CLI Terminal Client"
+version = "0.2.0"
+description = "ATS-Mini Modern TUI Client"
 readme = "README.md"
-requires-python = ">=3.12"
-license = {text = "MIT"}
+requires-python = ">=3.11"
+license = { text = "MIT" }
 
-dependencies = [
-  "ats-sdk",
-]
+dependencies = ["ats-sdk>=0.2.0", "textual>=0.47.0"]
 
 [project.scripts]
-atsmini-terminal = "ats_cli.terminal:main"
+atsmini = "ats_cli.tui:main"
 
 [project.urls]
 Repository = "https://github.com/esp32-si4732/ats-mini"
@@ -23,4 +21,4 @@ Issues = "https://github.com/esp32-si4732/ats-mini/issues"
 
 [tool.setuptools]
 packages = ["ats_cli"]
-package-dir = {"" = "src"}
+package-dir = { "" = "src" }

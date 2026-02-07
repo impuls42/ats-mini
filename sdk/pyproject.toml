@@ -4,13 +4,18 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ats-sdk"
-version = "0.1.0"
-description = "ATS-Mini CBOR-RPC Communication SDK"
+version = "0.2.0"
+description = "ATS-Mini CBOR-RPC Communication SDK with Async Support"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 license = { text = "MIT" }
 
-dependencies = ["cbor2", "pyserial", "websockets"]
+dependencies = [
+    "cbor2>=5.4.0",
+    "pyserial>=3.5",
+    "websockets>=12.0",
+    "bleak>=0.21.0",
+]
 
 [project.optional-dependencies]
 test = ["pytest", "pytest-asyncio"]

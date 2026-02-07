@@ -2,13 +2,28 @@
 """Interactive terminal for ATS-Mini CBOR-RPC client."""
 
 import argparse
+import asyncio
 import cmd
 import sys
 import threading
 import time
 from typing import Optional
 
-from ats_sdk import SerialRpcClient, WebSocketRpcClient
+from ats_sdk import AsyncSerialRpc, AsyncWebSocketRpc, AsyncBleRpc
+
+
+def run_async(coro):
+    """Helper to run async coroutine in sync context."""
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            # If loop is already running (rare), create new one
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    return loop.run_until_complete(coro)
 
 
 class ATSMiniTerminal(cmd.Cmd):
@@ -19,51 +34,84 @@ class ATSMiniTerminal(cmd.Cmd):
 
     def __init__(self):
         super().__init__()
-        self.client: Optional[SerialRpcClient | WebSocketRpcClient] = None
+        self.client: Optional[AsyncSerialRpc | AsyncWebSocketRpc | AsyncBleRpc] = None
         self.event_thread: Optional[threading.Thread] = None
         self.event_running = False
 
     def do_connect(self, arg):
-        """Connect to device: connect serial /dev/cu.usbmodem1101 OR connect ws ws://192.168.1.100/rpc"""
+        """Connect to device: connect serial <port> OR connect ws <url> OR connect ble [device_name]"""
         args = arg.split()
-        if len(args) < 2:
-            print("Usage: connect serial <port> OR connect ws <url>")
+        if len(args) < 1:
+            print("Usage: connect serial <port> | connect ws <url> | connect ble [device_name]")
             return
 
         transport = args[0]
-        target = args[1]
 
         try:
             if transport == "serial":
-                print(f"Connecting to {target}...")
-                self.client = SerialRpcClient(target)
-                self.client.switch_mode()
+                if len(args) < 2:
+                    print("Usage: connect serial <port>")
+                    return
+                port = args[1]
+                print(f"Connecting to {port}...")
+
+                self.client = AsyncSerialRpc(port)
+                run_async(self.client.connect())
+                run_async(self.client.switch_mode())
                 print("✓ Connected via Serial")
+
             elif transport == "ws":
-                print(f"Connecting to {target}...")
-                self.client = WebSocketRpcClient(target)
+                if len(args) < 2:
+                    print("Usage: connect ws <url>")
+                    return
+                url = args[1]
+                print(f"Connecting to {url}...")
+
+                self.client = AsyncWebSocketRpc(url)
+                run_async(self.client.connect())
                 print("✓ Connected via WebSocket")
+
+            elif transport == "ble":
+                device_name = args[1] if len(args) > 1 else "ATS-Mini"
+                print(f"Scanning for BLE device '{device_name}'...")
+
+                self.client = AsyncBleRpc(device_name, scan_timeout=10.0)
+                run_async(self.client.connect())
+                run_async(self.client.switch_mode())
+                print("✓ Connected via BLE")
+
             else:
                 print(f"Unknown transport: {transport}")
+                print("Available: serial, ws, ble")
                 return
 
             # Test connection with capabilities
-            req_id = self.client.request("capabilities.get")
-            caps = self.client.read_response(req_id)
+            req_id = run_async(self.client.request("capabilities.get"))
+            caps = run_async(self.client.read_response(req_id))
             if caps and isinstance(caps, dict) and "result" in caps:
                 print(f"Device: {caps['result'].get('device', 'Unknown')}")
                 print(f"Version: {caps['result'].get('version', 'Unknown')}")
+                transports = caps['result'].get('transports', [])
+                print(f"Transports: {', '.join(transports)}")
             elif caps and isinstance(caps, dict) and "error" in caps:
                 print(f"Warning: {caps['error']}")
         except Exception as e:
             print(f"✗ Connection failed: {e}")
+            if self.client:
+                try:
+                    run_async(self.client.close())
+                except:
+                    pass
             self.client = None
 
     def do_disconnect(self, arg):
         """Disconnect from device"""
         self._stop_events()
         if self.client:
-            self.client.close()
+            try:
+                run_async(self.client.close())
+            except:
+                pass
             self.client = None
             print("✓ Disconnected")
 
@@ -72,8 +120,8 @@ class ATSMiniTerminal(cmd.Cmd):
         if not self._check_connected():
             return
         try:
-            req_id = self.client.request("status.get")
-            resp = self.client.read_response(req_id)
+            req_id = run_async(self.client.request("status.get"))
+            resp = run_async(self.client.read_response(req_id))
             if "result" in resp:
                 r = resp["result"]
                 print(f"Frequency: {r.get('freq', 'N/A')} kHz")
@@ -95,8 +143,8 @@ class ATSMiniTerminal(cmd.Cmd):
         if not self._check_connected():
             return
         try:
-            req_id = self.client.request("capabilities.get")
-            resp = self.client.read_response(req_id)
+            req_id = run_async(self.client.request("capabilities.get"))
+            resp = run_async(self.client.read_response(req_id))
             if "result" in resp:
                 r = resp["result"]
                 print(f"Device: {r.get('device', 'Unknown')}")

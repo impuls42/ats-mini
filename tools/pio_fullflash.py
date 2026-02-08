@@ -1,12 +1,50 @@
 import os
+from typing import Any, TYPE_CHECKING
 
-Import("env")
+if TYPE_CHECKING:
+    from SCons.Script import Import as _SConsImport  # type: ignore[reportMissingImports]
+else:
+    _SConsImport = None
 
-# Set upload port from ATSMINI_PORT or ESPTOOL_PORT if not already configured
-_port = os.getenv("ATSMINI_PORT") or os.getenv("ESPTOOL_PORT")
-if _port and not env.subst("$UPLOAD_PORT"):
-    env.Replace(UPLOAD_PORT=_port)
 
+def _scons_import(name: str) -> None:
+    if _SConsImport is not None:
+        _SConsImport(name)
+        return
+    try:
+        Import(name)  # type: ignore[name-defined]
+    except Exception:
+        return
+
+
+_scons_import("env")
+env: Any = globals().get("env")
+
+
+def _load_dotenv() -> None:
+    try:
+        project_dir = env.subst("$PROJECT_DIR")
+    except Exception:
+        project_dir = os.getcwd()
+    dotenv_path = os.path.join(project_dir, ".env")
+    if not os.path.exists(dotenv_path):
+        return
+    try:
+        with open(dotenv_path, "r", encoding="utf-8") as handle:
+            for raw_line in handle:
+                line = raw_line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key and key not in os.environ:
+                    os.environ[key] = value
+    except Exception:
+        return
+
+
+_load_dotenv()
 
 def _quote(arg: str) -> str:
     if any(ch in arg for ch in (" ", "(", ")")):
@@ -90,6 +128,25 @@ def _get_upload_speed():
         return "115200"
 
 
+def _get_upload_port() -> str:
+    override = os.getenv("ATSMINI_PORT") or os.getenv("ESPTOOL_PORT")
+    if override:
+        return str(override)
+    try:
+        port = env.subst("$UPLOAD_PORT")
+        if port:
+            return port
+    except Exception:
+        pass
+    try:
+        autodetected = env.AutodetectUploadPort()
+    except Exception:
+        autodetected = None
+    if isinstance(autodetected, (list, tuple)):
+        return autodetected[0] if autodetected else ""
+    return autodetected or ""
+
+
 def _use_no_stub() -> bool:
     value = os.getenv("ATSMINI_ESPTOOL_NO_STUB") or os.getenv("ESPTOOL_NO_STUB")
     if value is None:
@@ -150,9 +207,19 @@ def upload_fullflash(source, target, env):
     board = env.BoardConfig()
     esptool = _get_esptool_path()
     merged = _merged_path()
+    upload_port = _get_upload_port()
     upload_speed = _get_upload_speed()
     no_stub = _use_no_stub()
     erase_all = _use_erase_all(no_stub)
+
+    if not upload_port:
+        message = (
+            "Upload port not set. Set ATSMINI_PORT or ESPTOOL_PORT, or configure upload_port in platformio.ini."
+        )
+        try:
+            env.Exit(1)
+        finally:
+            print(message)
 
     args = [
         env.subst("$PYTHONEXE"),
@@ -164,7 +231,7 @@ def upload_fullflash(source, target, env):
         args.append("--no-stub")
     args += [
         "--port",
-        env.subst("$UPLOAD_PORT"),
+        upload_port,
         "--baud",
         upload_speed,
         "--before",

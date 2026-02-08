@@ -20,7 +20,7 @@ export PLATFORMIO_BUILD_FLAGS = $(BUILD_FLAGS)
 ifdef LOGFILE
   LOG_DIR := $(dir $(LOGFILE))
   EXEC = @mkdir -p $(LOG_DIR); set -o pipefail;
-  LOG_PIPE = 2>&1 | tee $(LOGFILE)
+  LOG_PIPE = 2>&1 | tee -a $(LOGFILE)
 else
   EXEC = @
   LOG_PIPE =
@@ -71,7 +71,7 @@ upload: build
 	$(EXEC) (echo "Uploading to $(PORT)"; $(PIO) run -e $(PROFILE) -t upload --upload-port $(PORT)) $(LOG_PIPE)
 
 fullflash: build
-	$(EXEC) (echo "Full flash to $(PORT) (--no-stub, 115200 baud)"; $(PIO) run -e $(PROFILE) -t fullflash --upload-port $(PORT)) $(LOG_PIPE)
+	$(EXEC) (echo "Full flash to $(PORT)"; $(PIO) run -e $(PROFILE) -t fullflash --upload-port $(PORT)) $(LOG_PIPE)
 
 monitor:
 	$(EXEC) (echo "Monitor: $(PORT) @ 115200"; $(PIO) device monitor -p $(PORT) -b 115200) $(LOG_PIPE)

@@ -46,6 +46,7 @@ def _load_dotenv() -> None:
 
 _load_dotenv()
 
+
 def _quote(arg: str) -> str:
     if any(ch in arg for ch in (" ", "(", ")")):
         return f'"{arg}"'
@@ -213,9 +214,7 @@ def upload_fullflash(source, target, env):
     erase_all = _use_erase_all(no_stub)
 
     if not upload_port:
-        message = (
-            "Upload port not set. Set ATSMINI_PORT or ESPTOOL_PORT, or configure upload_port in platformio.ini."
-        )
+        message = "Upload port not set. Set ATSMINI_PORT or ESPTOOL_PORT, or configure upload_port in platformio.ini."
         try:
             env.Exit(1)
         finally:
@@ -237,7 +236,7 @@ def upload_fullflash(source, target, env):
         "--before",
         "default_reset",
         "--after",
-        "hard_reset",
+        "no_reset",
         "write_flash",
     ]
     if erase_all:
@@ -259,12 +258,12 @@ env.AddTarget(
     "mergedbin",
     env.Alias("buildprog"),
     build_merged,
-    "Build merged firmware binary (single file at 0x0)",
+    "Build merged bin",
 )
 
 env.AddTarget(
     "fullflash",
     env.Alias("buildprog"),
     [build_merged, upload_fullflash],
-    "Build and upload full flash image (erase + write merged bin)",
+    "Build and upload merged bin",
 )

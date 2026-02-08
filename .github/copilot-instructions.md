@@ -23,7 +23,7 @@ client/          Python CLI terminal
 All Python commands use `.venv`:
 ```bash
 source .venv/bin/activate
-pip install -e ".[rpc]"     # SDK + CLI dependencies
+pip install -e ".[test]"     # SDK + CLI dependencies
 ```
 
 ### Firmware Build

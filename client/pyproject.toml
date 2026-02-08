@@ -1,24 +1,24 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
+requires = ["setuptools>=68.0", "wheel"]
 
 [project]
+description = "ATS-Mini Modern CLI Client"
+license = {text = "MIT"}
 name = "ats-cli"
-version = "0.2.0"
-description = "ATS-Mini Modern TUI Client"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+version = "0.1.0"
 
-dependencies = ["ats-sdk>=0.2.0", "textual>=0.47.0"]
+dependencies = ["ats-sdk>=0.1.0", "click>=8.2.2", "prompt-toolkit>=3.0", "websockets>=16.0"]
 
 [project.scripts]
-atsmini = "ats_cli.tui:main"
+atsmini = "ats_cli.cli:main"
 
 [project.urls]
-Repository = "https://github.com/esp32-si4732/ats-mini"
 Issues = "https://github.com/esp32-si4732/ats-mini/issues"
+Repository = "https://github.com/esp32-si4732/ats-mini"
 
 [tool.setuptools]
+package-dir = {"" = "src"}
 packages = ["ats_cli"]
-package-dir = { "" = "src" }

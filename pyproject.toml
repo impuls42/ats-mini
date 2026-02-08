@@ -1,11 +1,11 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
+requires = ["setuptools>=68.0", "wheel"]
 
 [project]
 name = "ats-mini"
+requires-python = ">=3.11"
 version = "0.00"
-requires-python = ">=3.12"
 
 dependencies = [
   "towncrier",
@@ -13,14 +13,13 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["platformio", "pytest", "pytest-asyncio", "cbor2", "pyserial", "websockets", "ats-sdk", "ats-cli", "SCons", "black"]
+dev = ["platformio", "pytest", "pytest-asyncio", "cbor2", "pyserial", "websockets", "ats-sdk", "ats-cli", "black"]
 docs = ["sphinx", "furo", "myst_parser", "sphinx-autobuild"]
 test = ["pytest", "pytest-asyncio", "ats-sdk"]
-rpc = ["pytest", "cbor2", "pyserial", "websockets", "ats-sdk"]
 
 [tool.uv.sources]
-ats-sdk = { path = "sdk", editable = true }
-ats-cli = { path = "client", editable = true }
+ats-cli = {path = "client", editable = true}
+ats-sdk = {path = "sdk", editable = true}
 
 [tool.setuptools]
 packages = []
@@ -29,13 +28,13 @@ packages = []
 required-version = ">=0.6.8"
 
 [tool.towncrier]
-name = "ATS Mini"
-filename = "CHANGELOG.md"
-template = "changelog/.template.jinja"
 directory = "changelog/"
-underlines = ["", "", ""]
-title_format = "## {version} ({project_date})"
+filename = "CHANGELOG.md"
 issue_format = "[#{issue}](https://github.com/esp32-si4732/ats-mini/issues/{issue})"
+name = "ATS Mini"
+template = "changelog/.template.jinja"
+title_format = "## {version} ({project_date})"
+underlines = ["", "", ""]
 
 [[tool.towncrier.type]]
 directory = "removed"

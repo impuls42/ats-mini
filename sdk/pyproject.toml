@@ -1,38 +1,38 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
+requires = ["setuptools>=68.0", "wheel"]
 
 [project]
-name = "ats-sdk"
-version = "0.2.0"
 description = "ATS-Mini CBOR-RPC Communication SDK with Async Support"
+license = {text = "MIT"}
+name = "ats-sdk"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+version = "0.1.0"
 
 dependencies = [
-    "cbor2>=5.4.0",
-    "pyserial>=3.5",
-    "websockets>=12.0",
-    "bleak>=0.21.0",
+  "cbor2>=5.4.0",
+  "pyserial>=3.5",
+  "websockets>=12.0",
+  "bleak>=0.21.0",
 ]
 
 [project.optional-dependencies]
 test = ["pytest", "pytest-asyncio"]
 
 [project.urls]
-Repository = "https://github.com/esp32-si4732/ats-mini"
 Issues = "https://github.com/esp32-si4732/ats-mini/issues"
+Repository = "https://github.com/esp32-si4732/ats-mini"
 
 [tool.setuptools]
-package-dir = { "" = "src" }
+package-dir = {"" = "src"}
 packages = ["ats_sdk", "ats_sdk.transports"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
 asyncio_mode = "auto"
 log_cli = false
-log_cli_level = "INFO"
-log_cli_format = "%(asctime)s.%(msecs)03d [%(name)s] %(levelname)s: %(message)s"
 log_cli_date_format = "%H:%M:%S"
+log_cli_format = "%(asctime)s.%(msecs)03d [%(name)s] %(levelname)s: %(message)s"
+log_cli_level = "INFO"
+testpaths = ["tests"]
 # Use -v for verbose test names, --log-cli-level=DEBUG for SDK debug logs

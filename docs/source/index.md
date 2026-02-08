@@ -6,6 +6,7 @@ hidden: true
 manual.md
 flash.md
 recovery.md
+cbor_rpc_reference.md
 accessories.md
 mods.md
 hardware.md

@@ -117,11 +117,12 @@ class ATSMiniTerminal(cmd.Cmd):
 
     def do_status(self, arg):
         """Get device status"""
-        if not self._check_connected():
+        client = self._require_client()
+        if not client:
             return
         try:
-            req_id = run_async(self.client.request("status.get"))
-            resp = run_async(self.client.read_response(req_id))
+            req_id = run_async(client.request("status.get"))
+            resp = run_async(client.read_response(req_id))
             if "result" in resp:
                 r = resp["result"]
                 print(f"Frequency: {r.get('freq', 'N/A')} kHz")
@@ -140,11 +141,12 @@ class ATSMiniTerminal(cmd.Cmd):
 
     def do_capabilities(self, arg):
         """Get device capabilities"""
-        if not self._check_connected():
+        client = self._require_client()
+        if not client:
             return
         try:
-            req_id = run_async(self.client.request("capabilities.get"))
-            resp = run_async(self.client.read_response(req_id))
+            req_id = run_async(client.request("capabilities.get"))
+            resp = run_async(client.read_response(req_id))
             if "result" in resp:
                 r = resp["result"]
                 print(f"Device: {r.get('device', 'Unknown')}")
@@ -157,7 +159,8 @@ class ATSMiniTerminal(cmd.Cmd):
 
     def do_volume(self, arg):
         """Volume control: volume get|set <0-63>|up|down"""
-        if not self._check_connected():
+        client = self._require_client()
+        if not client:
             return
         args = arg.split()
         if not args:
@@ -167,18 +170,18 @@ class ATSMiniTerminal(cmd.Cmd):
         try:
             cmd = args[0]
             if cmd == "get":
-                req_id = self.client.request("volume.get")
+                req_id = run_async(client.request("volume.get"))
             elif cmd == "set" and len(args) > 1:
-                req_id = self.client.request("volume.set", {"level": int(args[1])})
+                req_id = run_async(client.request("volume.set", {"level": int(args[1])}))
             elif cmd == "up":
-                req_id = self.client.request("volume.up")
+                req_id = run_async(client.request("volume.up"))
             elif cmd == "down":
-                req_id = self.client.request("volume.down")
+                req_id = run_async(client.request("volume.down"))
             else:
                 print("Usage: volume get|set <0-63>|up|down")
                 return
 
-            resp = self.client.read_response(req_id)
+            resp = run_async(client.read_response(req_id))
 
             if "result" in resp:
                 if "level" in resp["result"]:
@@ -220,14 +223,15 @@ class ATSMiniTerminal(cmd.Cmd):
 
     def do_sleep(self, arg):
         """Sleep control: sleep on|off"""
-        if not self._check_connected():
+        client = self._require_client()
+        if not client:
             return
         if arg not in ["on", "off"]:
             print("Usage: sleep on|off")
             return
         try:
-            req_id = self.client.request(f"sleep.{arg}")
-            resp = self.client.read_response(req_id)
+            req_id = run_async(client.request(f"sleep.{arg}"))
+            resp = run_async(client.read_response(req_id))
             if "result" in resp:
                 print("✓ OK")
             elif "error" in resp:
@@ -237,14 +241,15 @@ class ATSMiniTerminal(cmd.Cmd):
 
     def do_log(self, arg):
         """Log control: log get|toggle"""
-        if not self._check_connected():
+        client = self._require_client()
+        if not client:
             return
         if arg not in ["get", "toggle"]:
             print("Usage: log get|toggle")
             return
         try:
-            req_id = self.client.request(f"log.{arg}")
-            resp = self.client.read_response(req_id)
+            req_id = run_async(client.request(f"log.{arg}"))
+            resp = run_async(client.read_response(req_id))
             if "result" in resp:
                 if "enabled" in resp["result"]:
                     print(f"Logging: {'enabled' if resp['result']['enabled'] else 'disabled'}")
@@ -257,7 +262,8 @@ class ATSMiniTerminal(cmd.Cmd):
 
     def do_memory(self, arg):
         """Memory operations: memory list|set <slot> <freq> <mode> <band>"""
-        if not self._check_connected():
+        client = self._require_client()
+        if not client:
             return
         args = arg.split()
         if not args:
@@ -267,8 +273,8 @@ class ATSMiniTerminal(cmd.Cmd):
         try:
             cmd = args[0]
             if cmd == "list":
-                req_id = self.client.request("memory.list")
-                resp = self.client.read_response(req_id)
+                req_id = run_async(client.request("memory.list"))
+                resp = run_async(client.read_response(req_id))
                 if "result" in resp and "stations" in resp["result"]:
                     stations = resp["result"]["stations"]
                     print(f"Memory stations ({len(stations)}):")
@@ -283,8 +289,8 @@ class ATSMiniTerminal(cmd.Cmd):
                     "mode": int(args[3]),
                     "band": int(args[4])
                 }
-                req_id = self.client.request("memory.set", params)
-                resp = self.client.read_response(req_id)
+                req_id = run_async(client.request("memory.set", params))
+                resp = run_async(client.read_response(req_id))
                 if "result" in resp:
                     print("✓ Memory updated")
                 elif "error" in resp:
@@ -296,7 +302,8 @@ class ATSMiniTerminal(cmd.Cmd):
 
     def do_screen(self, arg):
         """Screen capture: screen <bmp|rle> <filename>"""
-        if not self._check_connected():
+        client = self._require_client()
+        if not client:
             return
         args = arg.split()
         if len(args) < 2:
@@ -312,8 +319,8 @@ class ATSMiniTerminal(cmd.Cmd):
 
         try:
             print(f"Capturing screen as {fmt}...")
-            req_id = self.client.request("screen.capture", {"format": fmt})
-            resp = self.client.read_response(req_id)
+            req_id = run_async(client.request("screen.capture", {"format": fmt}))
+            resp = run_async(client.read_response(req_id))
 
             if "error" in resp:
                 print(f"✗ Error: {resp['error']}")
@@ -322,7 +329,7 @@ class ATSMiniTerminal(cmd.Cmd):
             # Collect chunks
             chunks = []
             while True:
-                msg = self.client.read_message(timeout=5.0)
+                msg = run_async(client.read_message(timeout=5.0))
                 if not msg:
                     print("✗ Timeout waiting for screen data")
                     return
@@ -347,7 +354,8 @@ class ATSMiniTerminal(cmd.Cmd):
 
     def do_events(self, arg):
         """Start/stop event monitoring: events start|stop"""
-        if not self._check_connected():
+        client = self._require_client()
+        if not client:
             return
 
         if arg == "start":
@@ -356,8 +364,8 @@ class ATSMiniTerminal(cmd.Cmd):
                 return
             try:
                 # Subscribe to stats events
-                req_id = self.client.request("stats.subscribe")
-                resp = self.client.read_response(req_id)
+                req_id = run_async(client.request("stats.subscribe"))
+                resp = run_async(client.read_response(req_id))
                 if "error" in resp:
                     print(f"✗ Error: {resp['error']}")
                     return
@@ -388,23 +396,24 @@ class ATSMiniTerminal(cmd.Cmd):
         print()
         return self.do_quit(arg)
 
-    def _check_connected(self):
-        """Check if client is connected."""
+    def _require_client(self) -> Optional[AsyncSerialRpc | AsyncWebSocketRpc | AsyncBleRpc]:
+        """Return connected client or print an error and return None."""
         if not self.client:
             print("✗ Not connected. Use 'connect' first.")
-            return False
-        return True
+            return None
+        return self.client
 
     def _simple_control(self, name, arg):
         """Handle simple up/down controls."""
-        if not self._check_connected():
+        client = self._require_client()
+        if not client:
             return
         if arg not in ["up", "down"]:
             print(f"Usage: {name} up|down")
             return
         try:
-            req_id = self.client.request(f"{name}.{arg}")
-            resp = self.client.read_response(req_id)
+            req_id = run_async(client.request(f"{name}.{arg}"))
+            resp = run_async(client.read_response(req_id))
             if "result" in resp:
                 print("✓ OK")
             elif "error" in resp:
@@ -416,7 +425,11 @@ class ATSMiniTerminal(cmd.Cmd):
         """Background thread to display events."""
         while self.event_running:
             try:
-                msg = self.client.read_message(timeout=0.5)
+                client = self.client
+                if not client:
+                    time.sleep(0.1)
+                    continue
+                msg = run_async(client.read_message(timeout=0.5))
                 if msg and msg.get("type") == "event":
                     event = msg.get("event")
                     params = msg.get("params", {})
@@ -444,8 +457,8 @@ class ATSMiniTerminal(cmd.Cmd):
                 self.event_thread.join(timeout=2.0)
             if self.client:
                 try:
-                    req_id = self.client.request("stats.unsubscribe")
-                    self.client.read_response(req_id)
+                    req_id = run_async(self.client.request("stats.unsubscribe"))
+                    run_async(self.client.read_response(req_id))
                 except Exception:
                     pass
             print("✓ Event monitoring stopped")

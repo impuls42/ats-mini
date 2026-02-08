@@ -43,7 +43,7 @@ bool prefsAreWritten()
   return (result);
 }
 
-// Invlaidate all currently saved preferences
+// Invalidate all currently saved preferences
 void prefsInvalidate()
 {
   static const char *sections[] =
@@ -339,24 +339,25 @@ bool diskInit(bool force)
     LittleFS.format();
   }
 
-  bool mounted = LittleFS.begin(false, "/littlefs", 10, "littlefs");
+  // Prefer current partition label (spiffs) used for LittleFS.
+  bool mounted = LittleFS.begin(false, "/littlefs", 10, "spiffs");
 
-  // Fallback for devices upgraded via OTA that still have "spiffs" partition label
+  // Fallback for devices upgraded via OTA that still have "littlefs" label.
   if (!mounted)
   {
-    mounted = LittleFS.begin(false, "/littlefs", 10, "spiffs");
+    mounted = LittleFS.begin(false, "/littlefs", 10, "littlefs");
   }
 
-  // If mount failed, try formatting the expected partition label first.
-  if (!mounted)
-  {
-    mounted = LittleFS.begin(true, "/littlefs", 10, "littlefs");
-  }
-
-  // Last-resort fallback: format legacy "spiffs" label if present.
+  // If mount failed, try formatting the preferred label first.
   if (!mounted)
   {
     mounted = LittleFS.begin(true, "/littlefs", 10, "spiffs");
+  }
+
+  // Last-resort fallback: format legacy "littlefs" label if present.
+  if (!mounted)
+  {
+    mounted = LittleFS.begin(true, "/littlefs", 10, "littlefs");
   }
 
   if (!mounted)

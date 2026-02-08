@@ -5,8 +5,8 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
+#include <array>
 #include <string>
-#include <freertos/semphr.h>
 
 #include "Remote.h"
 
@@ -27,9 +27,13 @@ private:
   bool started;
 
   // Data handling
-  SemaphoreHandle_t dataConsumedSem;
   std::string incomingPacket;
   size_t unreadByteCount = 0;
+  static constexpr size_t kRxQueueDepth = 4;
+  std::array<std::string, kRxQueueDepth> rxQueue;
+  size_t rxQueueHead = 0;
+  size_t rxQueueTail = 0;
+  size_t rxQueueCount = 0;
 
   // Device attributes
   const char *deviceName;
@@ -42,11 +46,34 @@ public:
     pService = nullptr;
     pTxCharacteristic = nullptr;
     pRxCharacteristic = nullptr;
-    dataConsumedSem = xSemaphoreCreateBinary();
-    if (dataConsumedSem != nullptr)
+  }
+
+  void clearRxQueue()
+  {
+    incomingPacket.clear();
+    unreadByteCount = 0;
+    rxQueueHead = 0;
+    rxQueueTail = 0;
+    rxQueueCount = 0;
+  }
+
+  void enqueueRxPacket(std::string &&value)
+  {
+    if (unreadByteCount == 0 && rxQueueCount == 0)
     {
-      xSemaphoreGive(dataConsumedSem); // Start with semaphore available
+      incomingPacket = std::move(value);
+      unreadByteCount = incomingPacket.size();
+      return;
     }
+
+    if (rxQueueCount >= kRxQueueDepth)
+    {
+      return; // Drop newest packet if queue is full
+    }
+
+    rxQueue[rxQueueTail] = std::move(value);
+    rxQueueTail = (rxQueueTail + 1) % kRxQueueDepth;
+    rxQueueCount++;
   }
 
   void start()
@@ -106,10 +133,7 @@ public:
 
   void onDisconnect(BLEServer *pServer)
   {
-    if (dataConsumedSem != nullptr)
-    {
-      xSemaphoreGive(dataConsumedSem);
-    }
+    clearRxQueue();
     pServer->getAdvertising()->start();
   }
 
@@ -117,16 +141,9 @@ public:
   {
     if (pCharacteristic == pRxCharacteristic)
     {
-      // Wait for previous data to get consumed
-      if (dataConsumedSem != nullptr)
-      {
-        xSemaphoreTake(dataConsumedSem, portMAX_DELAY);
-      }
-
-      // Hold data until next read
+      // Non-blocking: enqueue packet or drop if queue is full
       std::string value = pCharacteristic->getValue();
-      incomingPacket.assign(value.begin(), value.end());
-      unreadByteCount = incomingPacket.size();
+      enqueueRxPacket(std::move(value));
     }
   }
 
@@ -157,9 +174,12 @@ public:
       size_t index = incomingPacket.size() - unreadByteCount;
       int result = static_cast<uint8_t>(incomingPacket[index]);
       unreadByteCount--;
-      if (unreadByteCount == 0 && dataConsumedSem != nullptr)
+      if (unreadByteCount == 0 && rxQueueCount > 0)
       {
-        xSemaphoreGive(dataConsumedSem);
+        incomingPacket = std::move(rxQueue[rxQueueHead]);
+        rxQueueHead = (rxQueueHead + 1) % kRxQueueDepth;
+        rxQueueCount--;
+        unreadByteCount = incomingPacket.size();
       }
       return result;
     }

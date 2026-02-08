@@ -14,7 +14,9 @@ log = logging.getLogger("test.rpc_ble")
 DEVICE_NAME = os.getenv("ATSMINI_BLE_DEVICE", "ATS-Mini")
 SKIP_BLE = os.getenv("ATSMINI_SKIP_BLE", "").lower() in ("1", "true", "yes")
 
-pytestmark = pytest.mark.skipif(SKIP_BLE, reason="BLE tests disabled (set ATSMINI_BLE_DEVICE)")
+pytestmark = pytest.mark.skipif(
+    SKIP_BLE, reason="BLE tests disabled (set ATSMINI_BLE_DEVICE)"
+)
 
 
 async def _read_until(client: AsyncBleRpc, predicate, timeout: float = 5.0):
@@ -34,7 +36,6 @@ async def _read_until(client: AsyncBleRpc, predicate, timeout: float = 5.0):
 async def test_ble_volume_set():
     log.info("=== Starting test_ble_volume_set ===")
     async with AsyncBleRpc(DEVICE_NAME, scan_timeout=10.0) as client:
-        await client.switch_mode()
         volume = random.randint(0, 16)
         log.info(f"Testing volume.set with value={volume}")
         req_id = await client.request("volume.set", {"value": volume})
@@ -48,7 +49,6 @@ async def test_ble_volume_set():
 async def test_ble_capabilities_get():
     log.info("=== Starting test_ble_capabilities_get ===")
     async with AsyncBleRpc(DEVICE_NAME, scan_timeout=10.0) as client:
-        await client.switch_mode()
         log.info("Requesting capabilities.get")
         req_id = await client.request("capabilities.get")
         message = await client.read_response(req_id)
@@ -59,34 +59,15 @@ async def test_ble_capabilities_get():
         assert "transports" in result
         # Verify BLE is listed in transports
         assert "ble" in result.get("transports", [])
-        log.info(f"✓ test_ble_capabilities_get passed (rpc_version={result.get('rpc_version')})")
-
-
-@pytest.mark.asyncio
-async def test_ble_log_get_toggle():
-    log.info("=== Starting test_ble_log_get_toggle ===")
-    async with AsyncBleRpc(DEVICE_NAME, scan_timeout=10.0) as client:
-        await client.switch_mode()
-        log.info("Getting initial log state")
-        get_id = await client.request("log.get")
-        reply = await client.read_response(get_id)
-        assert reply.get("id") == get_id
-        initial = reply.get("result", {}).get("enabled")
-        log.info(f"Initial log state: {initial}")
-
-        log.info("Toggling log state")
-        toggle_id = await client.request("log.toggle")
-        toggled = await client.read_response(toggle_id)
-        assert toggled.get("id") == toggle_id
-        assert toggled.get("result", {}).get("enabled") == (not initial)
-        log.info(f"✓ test_ble_log_get_toggle passed (toggled to {not initial})")
+        log.info(
+            f"✓ test_ble_capabilities_get passed (rpc_version={result.get('rpc_version')})"
+        )
 
 
 @pytest.mark.asyncio
 async def test_ble_stats_event_subscription():
     log.info("=== Starting test_ble_stats_event_subscription ===")
     async with AsyncBleRpc(DEVICE_NAME, scan_timeout=10.0) as client:
-        await client.switch_mode()
         log.info("Subscribing to 'stats' events")
         req_id = await client.request("events.subscribe", {"event": "stats"})
         reply = await client.read_message()
@@ -108,7 +89,6 @@ async def test_ble_screen_capture_rle():
     """Test screen capture over BLE - validates chunking and reassembly."""
     log.info("=== Starting test_ble_screen_capture_rle ===")
     async with AsyncBleRpc(DEVICE_NAME, scan_timeout=10.0) as client:
-        await client.switch_mode()
         log.info("Requesting screen capture with RLE format")
         req_id = await client.request("screen.capture", {"format": "rle"})
         reply = await client.read_response(req_id, timeout=5.0)
@@ -137,14 +117,15 @@ async def test_ble_screen_capture_rle():
                     done = True
         assert done, "Screen capture did not complete"
         assert total_bytes > 0, "No data received"
-        log.info(f"✓ test_ble_screen_capture_rle passed ({total_bytes} bytes in {chunks_received} chunks)")
+        log.info(
+            f"✓ test_ble_screen_capture_rle passed ({total_bytes} bytes in {chunks_received} chunks)"
+        )
 
 
 @pytest.mark.asyncio
 async def test_ble_status_get():
     log.info("=== Starting test_ble_status_get ===")
     async with AsyncBleRpc(DEVICE_NAME, scan_timeout=10.0) as client:
-        await client.switch_mode()
         log.info("Requesting status.get")
         req_id = await client.request("status.get")
         reply = await client.read_response(req_id)
@@ -152,19 +133,27 @@ async def test_ble_status_get():
         assert "band" in result
         assert "mode" in result
         assert "frequency" in result
-        log.info(f"✓ test_ble_status_get passed (band={result.get('band')}, mode={result.get('mode')}, freq={result.get('frequency')})")
+        log.info(
+            f"✓ test_ble_status_get passed (band={result.get('band')}, mode={result.get('mode')}, freq={result.get('frequency')})"
+        )
 
 
 @pytest.mark.asyncio
 async def test_ble_basic_controls_roundtrip():
     log.info("=== Starting test_ble_basic_controls_roundtrip ===")
     async with AsyncBleRpc(DEVICE_NAME, scan_timeout=10.0) as client:
-        await client.switch_mode()
 
         test_methods = [
             ("band.up", "band.down", "mode.up", "mode.down"),
             ("step.up", "step.down", "bandwidth.up", "bandwidth.down"),
-            ("agc.up", "agc.down", "backlight.up", "backlight.down", "cal.up", "cal.down"),
+            (
+                "agc.up",
+                "agc.down",
+                "backlight.up",
+                "backlight.down",
+                "cal.up",
+                "cal.down",
+            ),
             ("sleep.on", "sleep.off"),
         ]
 
@@ -182,7 +171,6 @@ async def test_ble_basic_controls_roundtrip():
 async def test_ble_memory_list():
     log.info("=== Starting test_ble_memory_list ===")
     async with AsyncBleRpc(DEVICE_NAME, scan_timeout=10.0) as client:
-        await client.switch_mode()
         log.info("Requesting memory.list")
         req_id = await client.request("memory.list")
         reply = await client.read_response(req_id)

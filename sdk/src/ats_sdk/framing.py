@@ -1,6 +1,3 @@
-SWITCH_BYTE = 0x1E
-
-
 def encode_frame(payload: bytes) -> bytes:
     length = len(payload)
     return length.to_bytes(4, "big") + payload

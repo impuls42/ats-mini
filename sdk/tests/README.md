@@ -46,17 +46,6 @@ ATSMINI_PORT=/dev/ttyACM0 ATSMINI_SKIP_BLE=1 pytest sdk/tests/
 ATSMINI_PORT=/dev/ttyACM0 ATSMINI_DEBUG=1 pytest sdk/tests/ -v
 ```
 
-## Manual BLE Enablement
-
-If you need to manually enable BLE on the device:
-
-```bash
-# Using the standalone script
-ATSMINI_PORT=/dev/ttyACM0 python sdk/enable_ble.py
-
-# Or specify port as argument
-python sdk/enable_ble.py /dev/ttyACM0
-```
 
 ## Test Structure
 

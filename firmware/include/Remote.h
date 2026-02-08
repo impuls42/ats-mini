@@ -16,6 +16,10 @@ typedef struct
   uint8_t rpcHeaderRead = 0;
   uint8_t rpcHeader[4] = {0};
   uint8_t *rpcBuf = nullptr;
+  uint8_t *rpcSendBuf = nullptr;
+  size_t rpcSendBufCap = 0;
+  uint8_t *rpcEncodeBuf = nullptr;
+  size_t rpcEncodeBufCap = 0;
 } RemoteState;
 
 bool remoteStateInit(RemoteState *state);

@@ -4,15 +4,63 @@
 #include "Ble.h"
 #include "CborRpc.h"
 
+struct BleCborCtx
+{
+  Stream *stream;
+  RemoteState *state;
+};
+
+static uint8_t *bleEnsureSendBuffer(RemoteState *state, size_t totalLen)
+{
+  if (!state)
+    return nullptr;
+
+  if (state->rpcSendBufCap < totalLen)
+  {
+    if (state->rpcSendBuf)
+    {
+      free(state->rpcSendBuf);
+      state->rpcSendBuf = nullptr;
+      state->rpcSendBufCap = 0;
+    }
+
+    uint8_t *buf = (uint8_t *)ps_malloc(totalLen);
+    if (!buf)
+      buf = (uint8_t *)malloc(totalLen);
+    if (!buf)
+      return nullptr;
+
+    state->rpcSendBuf = buf;
+    state->rpcSendBufCap = totalLen;
+  }
+
+  return state->rpcSendBuf;
+}
+
 static bool cborRpcSendFrameStream(void *ctx, const uint8_t *data, size_t len)
 {
-  Stream *stream = (Stream *)ctx;
+  BleCborCtx *bleCtx = (BleCborCtx *)ctx;
+  Stream *stream = bleCtx ? bleCtx->stream : nullptr;
+  RemoteState *state = bleCtx ? bleCtx->state : nullptr;
+  if (!stream)
+    return false;
 
   // Combine header and payload into single buffer to avoid BLE packet reordering
   size_t totalLen = 4 + len;
-  uint8_t *buffer = (uint8_t *)malloc(totalLen);
-  if (!buffer)
-    return false;
+
+  uint8_t stackBuf[256];
+  uint8_t *buffer = nullptr;
+
+  if (totalLen <= sizeof(stackBuf))
+  {
+    buffer = stackBuf;
+  }
+  else
+  {
+    buffer = bleEnsureSendBuffer(state, totalLen);
+    if (!buffer)
+      return false;
+  }
 
   // Write 4-byte length header (big-endian)
   buffer[0] = (uint8_t)((len >> 24) & 0xFF);
@@ -27,7 +75,6 @@ static bool cborRpcSendFrameStream(void *ctx, const uint8_t *data, size_t len)
   stream->write(buffer, totalLen);
   stream->flush();
 
-  free(buffer);
   return true;
 }
 
@@ -45,7 +92,8 @@ static void cborRpcTickTime(Stream *stream, RemoteState *state)
   if (millis() - state->remoteTimer >= 500)
   {
     state->remoteTimer = millis();
-    CborRpcWriter writer = {stream, cborRpcSendFrameStream};
+    BleCborCtx ctx = {stream, state};
+    CborRpcWriter writer = {&ctx, cborRpcSendFrameStream};
     cborRpcSendStatsEvent(&writer, state);
   }
 }
@@ -87,25 +135,10 @@ int bleDoCommand(Stream *stream, RemoteState *state, uint8_t bleMode)
 
   if (BLESerial.connectedCount() > 0)
   {
-    if (state->rpcMode)
-    {
-      CborRpcWriter writer = {stream, cborRpcSendFrameStream};
-      cborRpcConsumeStream(stream, state, &writer);
-      return 0;
-    }
-
-    if (BLESerial.available())
-    {
-      uint8_t key = BLESerial.read();
-      if (key == CBOR_RPC_SWITCH)
-      {
-        state->rpcMode = true;
-        cborRpcResetState(state);
-        state->remoteTimer = millis();
-        return 0;
-      }
-      return remoteDoCommand(stream, state, key);
-    }
+    BleCborCtx ctx = {stream, state};
+    CborRpcWriter writer = {&ctx, cborRpcSendFrameStream};
+    cborRpcConsumeStream(stream, state, &writer);
+    return 0;
   }
   return 0;
 }
@@ -117,11 +150,6 @@ void remoteBLETickTime(Stream *stream, RemoteState *state, uint8_t bleMode)
 
   if (BLESerial.connectedCount() > 0)
   {
-    if (state->rpcMode)
-    {
-      cborRpcTickTime(stream, state);
-      return;
-    }
-    remoteTickTime(stream, state);
+    cborRpcTickTime(stream, state);
   }
 }

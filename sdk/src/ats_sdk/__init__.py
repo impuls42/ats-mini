@@ -6,7 +6,7 @@ via Serial, WebSocket, or BLE using CBOR-RPC protocol.
 
 from .base import AsyncRpcTransport
 from .transports import AsyncSerialRpc, AsyncWebSocketRpc, AsyncBleRpc
-from .framing import SWITCH_BYTE, decode_frame, encode_frame
+from .framing import decode_frame, encode_frame
 from .radio import Radio, RpcError
 
 __all__ = [
@@ -19,7 +19,6 @@ __all__ = [
     "AsyncWebSocketRpc",
     "AsyncBleRpc",
     # Framing utilities
-    "SWITCH_BYTE",
     "encode_frame",
     "decode_frame",
 ]

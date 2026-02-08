@@ -34,6 +34,18 @@ void remoteStateFree(RemoteState *state)
     free(state->rpcBuf);
     state->rpcBuf = nullptr;
   }
+  if (state->rpcSendBuf)
+  {
+    free(state->rpcSendBuf);
+    state->rpcSendBuf = nullptr;
+  }
+  state->rpcSendBufCap = 0;
+  if (state->rpcEncodeBuf)
+  {
+    free(state->rpcEncodeBuf);
+    state->rpcEncodeBuf = nullptr;
+  }
+  state->rpcEncodeBufCap = 0;
 }
 
 static uint8_t char2nibble(char key)
@@ -244,8 +256,8 @@ void remoteCaptureScreen(Stream *stream, bool binary)
       bufferPos = 0;
     }
 
-    // Explicit final delay to ensure last data is transmitted over BLE
-    delay(500);
+    // Flush stream
+    stream->flush();
   }
 }
 
@@ -671,27 +683,9 @@ int serialDoCommand(Stream *stream, RemoteState *state, uint8_t usbMode)
   if (usbMode == USB_OFF)
     return 0;
 
-  if (state->rpcMode)
-  {
-    CborRpcWriter writer = {stream, cborRpcSendFrameStream};
-    if (cborRpcConsumeStream(stream, state, &writer))
-      state->lastRxTime = millis();
-    return 0;
-  }
-
-  if (Serial.available())
-  {
+  CborRpcWriter writer = {stream, cborRpcSendFrameStream};
+  if (cborRpcConsumeStream(stream, state, &writer))
     state->lastRxTime = millis();
-    uint8_t key = Serial.read();
-    if (key == CBOR_RPC_SWITCH)
-    {
-      state->rpcMode = true;
-      cborRpcResetState(state);
-      state->remoteTimer = millis();
-      return 0;
-    }
-    return remoteDoCommand(stream, state, key);
-  }
   return 0;
 }
 
@@ -700,11 +694,5 @@ void serialTickTime(Stream *stream, RemoteState *state, uint8_t usbMode)
   if (usbMode == USB_OFF)
     return;
 
-  if (state->rpcMode)
-  {
-    cborRpcTickTime(stream, state);
-    return;
-  }
-
-  remoteTickTime(stream, state);
+  cborRpcTickTime(stream, state);
 }

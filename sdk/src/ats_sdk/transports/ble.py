@@ -8,7 +8,6 @@ from bleak import BleakClient, BleakScanner
 from bleak.backends.characteristic import BleakGATTCharacteristic
 
 from ..base import AsyncRpcTransport
-from ..framing import SWITCH_BYTE
 
 # Nordic UART Service UUIDs
 NUS_SERVICE_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
@@ -49,8 +48,7 @@ class AsyncBleRpc(AsyncRpcTransport):
         self.logger.info(f"Scanning for BLE device '{self.device_name}'...")
 
         device = await BleakScanner.find_device_by_name(
-            self.device_name,
-            timeout=self.scan_timeout
+            self.device_name, timeout=self.scan_timeout
         )
 
         if device is None:
@@ -62,13 +60,16 @@ class AsyncBleRpc(AsyncRpcTransport):
         self.logger.info(f"Found device: {device.name} ({device.address})")
 
         # Connect
-        self._client = BleakClient(
-            device,
-            disconnected_callback=self._on_disconnect
-        )
+        self._client = BleakClient(device, disconnected_callback=self._on_disconnect)
 
         await self._client.connect()
         self.logger.info(f"Connected to {device.name}")
+
+        # Trigger MTU negotiation (best-effort, uses Bleak internal API)
+        try:
+            await self._client._backend._acquire_mtu()  # type: ignore[union-attr]
+        except Exception:
+            self.logger.debug("MTU acquisition not available, using default")
 
         # Discover services and characteristics
         services = self._client.services
@@ -110,15 +111,12 @@ class AsyncBleRpc(AsyncRpcTransport):
         self._write_with_response = "write-without-response" not in rx_props
 
         # Subscribe to TX characteristic (notifications from device)
-        await self._client.start_notify(
-            self._tx_char,
-            self._on_notification
-        )
+        await self._client.start_notify(self._tx_char, self._on_notification)
 
         self.logger.info("Subscribed to TX notifications")
 
         # Get actual MTU
-        if hasattr(self._client, 'mtu_size'):
+        if hasattr(self._client, "mtu_size"):
             self._mtu = self._client.mtu_size
             self.logger.debug(f"MTU: {self._mtu} bytes")
 
@@ -137,38 +135,18 @@ class AsyncBleRpc(AsyncRpcTransport):
             self._rx_char = None
             self.logger.info("AsyncBleRpc disconnected")
 
-    async def switch_mode(self) -> None:
-        """Switch device to CBOR-RPC mode.
-
-        Sends the SWITCH_BYTE (0x1E) to activate CBOR-RPC protocol.
-        Required before making RPC requests.
-        """
-        self.logger.debug(f"Switching to CBOR-RPC mode (sending 0x{SWITCH_BYTE:02X})")
-        await self.write_raw(bytes([SWITCH_BYTE]))
-
-        # Wait for mode switch to complete
-        await asyncio.sleep(0.2)
-
-        # Clear any leftover data from the RX buffer
-        if len(self._rx_buffer) > 0:
-            self.logger.debug(f"Clearing {len(self._rx_buffer)} bytes from RX buffer after mode switch")
-            self._rx_buffer.clear()
-            self._rx_event.clear()
-
-        self.logger.info("CBOR-RPC mode activated")
-
     async def write_raw(self, data: bytes) -> None:
         """Write raw bytes to RX characteristic (write to device)."""
         if not self._client or not self._client.is_connected:
             raise ConnectionError("Not connected to BLE device")
         if self._rx_char is None:
-            raise ConnectionError("RX characteristic not available; reconnect and try again")
+            raise ConnectionError(
+                "RX characteristic not available; reconnect and try again"
+            )
 
         # Write to RX characteristic (write to device)
         await self._client.write_gatt_char(
-            self._rx_char,
-            data,
-            response=self._write_with_response
+            self._rx_char, data, response=self._write_with_response
         )
 
     async def write_frame(self, frame: bytes) -> None:
@@ -182,7 +160,7 @@ class AsyncBleRpc(AsyncRpcTransport):
 
         offset = 0
         while offset < len(frame):
-            chunk = frame[offset:offset + chunk_size]
+            chunk = frame[offset : offset + chunk_size]
             await self.write_raw(chunk)
             offset += chunk_size
 
@@ -217,11 +195,15 @@ class AsyncBleRpc(AsyncRpcTransport):
         if length > 1_000_000 or length == 0:
             # Corrupted frame - clear buffer and resync
             header_hex = self._rx_buffer[:4].hex()
-            self.logger.error(f"Invalid frame length: {length} bytes (0x{length:08X}), header={header_hex}")
+            self.logger.error(
+                f"Invalid frame length: {length} bytes (0x{length:08X}), header={header_hex}"
+            )
             self.logger.error(f"Clearing {len(self._rx_buffer)} bytes from RX buffer")
             self._rx_buffer.clear()
             self._rx_event.clear()
-            raise ValueError(f"Invalid frame length: {length} bytes - stream may be out of sync")
+            raise ValueError(
+                f"Invalid frame length: {length} bytes - stream may be out of sync"
+            )
 
         self.logger.debug(f"Message length: {length} bytes (total: {total_size})")
 
@@ -249,7 +231,9 @@ class AsyncBleRpc(AsyncRpcTransport):
 
         return frame
 
-    def _on_notification(self, characteristic: BleakGATTCharacteristic, data: bytearray):
+    def _on_notification(
+        self, characteristic: BleakGATTCharacteristic, data: bytearray
+    ):
         """Handle incoming notification from TX characteristic.
 
         Called by Bleak when data is received from the device.

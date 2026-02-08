@@ -88,7 +88,7 @@ if (!ESP.getPsramSize()) {
 }
 ```
 
-**References**: [firmware/src/Compression.cpp](firmware/src/Compression.cpp) lines 94, 328 for PSRAM usage patterns.
+**References**: [firmware/src/Compression.cpp](../firmware/src/Compression.cpp) lines 94, 328 for PSRAM usage patterns.
 
 ### Naming Conventions
 
@@ -114,7 +114,7 @@ spr.pushSprite(0, 0);  // Render sprite to display
 // spr.fillRect(0, 0, 320, 170, TFT_BLACK);
 ```
 
-**Theme structure**: See [firmware/include/Themes.h](firmware/include/Themes.h) - 60+ color properties per theme.
+**Theme structure**: See [firmware/include/Themes.h](../firmware/include/Themes.h) - 60+ color properties per theme.
 
 ### Radio Control (SI4735)
 
@@ -128,7 +128,7 @@ rssi = rx.getCurrentRSSI();
 snr = rx.getCurrentSNR();
 ```
 
-**SSB requires patch loading**: See [firmware/src/Utils.cpp](firmware/src/Utils.cpp) line 76.
+**SSB requires patch loading**: See [firmware/src/Utils.cpp](../firmware/src/Utils.cpp) line 76.
 
 ### Storage Patterns
 
@@ -145,7 +145,7 @@ void loop() {
 }
 ```
 
-**Partitions**: `settings`, `memories`, `bands`, `network` - see [firmware/include/Storage.h](firmware/include/Storage.h).
+**Partitions**: `settings`, `memories`, `bands`, `network` - see [firmware/include/Storage.h](../firmware/include/Storage.h).
 
 ### Data Structures
 
@@ -160,7 +160,7 @@ typedef struct __attribute__((packed)) {
 } Memory;
 ```
 
-**Version tracking** ([firmware/include/Common.h](firmware/include/Common.h) lines 16-19):
+**Version tracking** ([firmware/include/Common.h](../firmware/include/Common.h) lines 16-19):
 ```cpp
 #define VER_APP 233      // Firmware version
 #define VER_SETTINGS 71  // Settings struct version
@@ -172,7 +172,7 @@ typedef struct __attribute__((packed)) {
 
 ### PSRAM Configuration
 
-Two build profiles in [platformio.ini](platformio.ini):
+Two build profiles in [platformio.ini](../platformio.ini):
 - **esp32s3-ospi**: 8MB OPI PSRAM (default)
 - **esp32s3-qspi**: 2MB QSPI PSRAM (test device)
 
@@ -194,7 +194,7 @@ make build DEBUG_LEVEL=1        # Enable debug output
 make build HALF_STEP=1          # Enable encoder half-steps
 ```
 
-Flags in [platformio.ini](platformio.ini): `-DDEBUG=0`, `-DUSER_SETUP_LOADED`, `-include firmware/include/tft_setup.h`
+Flags in [platformio.ini](../platformio.ini): `-DDEBUG=0`, `-DUSER_SETUP_LOADED`, `-include firmware/include/tft_setup.h`
 
 ### Interrupt Safety
 
@@ -210,14 +210,10 @@ IRAM_ATTR void rotaryEncoder() {
 
 ### CBOR-RPC Protocol
 
-**Activation**: Send `0x1E` (SWITCH_BYTE) to enable CBOR-RPC mode (legacy terminal commands are default).
-
-**Frame format**: 4-byte big-endian length + CBOR payload
-
 **Key files**:
-- Firmware: [firmware/src/CborRpc.cpp](firmware/src/CborRpc.cpp), [firmware/include/CborRpc.h](firmware/include/CborRpc.h)
-- SDK: [sdk/src/ats_sdk/rpc.py](sdk/src/ats_sdk/rpc.py), [sdk/src/ats_sdk/framing.py](sdk/src/ats_sdk/framing.py)
-- Tests: [sdk/tests/test_rpc_serial.py](sdk/tests/test_rpc_serial.py)
+- Firmware: [firmware/src/CborRpc.cpp](../firmware/src/CborRpc.cpp), [firmware/include/CborRpc.h](../firmware/include/CborRpc.h)
+- SDK: [sdk/src/ats_sdk/](../sdk/src/ats_sdk/__init__.py)
+- Tests: [sdk/tests/test_rpc_serial.py](../sdk/tests/test_rpc_serial.py)
 
 **Method naming**: Namespace with dot (e.g., `volume.set`, `tuner.frequency.set`)
 
@@ -236,7 +232,7 @@ IRAM_ATTR void rotaryEncoder() {
 - **Display**: ST7789 170×320 8-bit parallel
 - **Radio**: SI4735 on I2C (GPIO17/18)
 
-**Pin assignments**: [firmware/include/Common.h](firmware/include/Common.h) lines 41-58.
+**Pin assignments**: [firmware/include/Common.h](../firmware/include/Common.h) lines 41-58.
 
 ## Changelog
 
@@ -266,4 +262,4 @@ Do not leave the user with untested changes. If a build or test fails, diagnose 
 - **Discussions**: Feature requests and questions
 - **PRs**: Not guaranteed unless beneficial to majority - propose in Discussions first
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for agent development workflow with logging.
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for agent development workflow with logging.

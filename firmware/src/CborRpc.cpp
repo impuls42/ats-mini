@@ -12,6 +12,40 @@
 #include <tinycbor.h>
 #include <string.h>
 
+//
+// Ensure RemoteState has an encode buffer of at least the given size.
+// Grows the buffer if needed (up to CBOR_RPC_MAX_FRAME + framing overhead).
+// Returns nullptr on allocation failure.
+//
+static uint8_t *rpcEnsureEncodeBuffer(RemoteState *state, size_t minSize)
+{
+  const size_t maxSize = CBOR_RPC_MAX_FRAME + 256;
+  if (!state || minSize > maxSize)
+    return nullptr;
+
+  if (state->rpcEncodeBufCap < minSize)
+  {
+    if (state->rpcEncodeBuf)
+    {
+      free(state->rpcEncodeBuf);
+      state->rpcEncodeBuf = nullptr;
+      state->rpcEncodeBufCap = 0;
+    }
+
+    // Allocate in PSRAM if available, fall back to heap
+    uint8_t *buf = (uint8_t *)ps_malloc(minSize);
+    if (!buf)
+      buf = (uint8_t *)malloc(minSize);
+    if (!buf)
+      return nullptr;
+
+    state->rpcEncodeBuf = buf;
+    state->rpcEncodeBufCap = minSize;
+  }
+
+  return state->rpcEncodeBuf;
+}
+
 static bool cborRpcSendFrame(CborRpcWriter *writer, const uint8_t *data, size_t len)
 {
   if (!writer || !writer->send_frame)
@@ -145,12 +179,10 @@ static bool cborRpcSendCapabilitiesResult(CborRpcWriter *writer, int64_t id)
   cbor_encode_int(&map, id);
 
   cbor_encode_text_stringz(&map, "result");
-  cbor_encoder_create_map(&map, &resultMap, 6);
+  cbor_encoder_create_map(&map, &resultMap, 5);
 
   cbor_encode_text_stringz(&resultMap, "rpc_version");
   cbor_encode_uint(&resultMap, 1);
-  cbor_encode_text_stringz(&resultMap, "switch_byte");
-  cbor_encode_uint(&resultMap, CBOR_RPC_SWITCH);
   cbor_encode_text_stringz(&resultMap, "max_frame");
   cbor_encode_uint(&resultMap, CBOR_RPC_MAX_FRAME);
   cbor_encode_text_stringz(&resultMap, "firmware");
@@ -335,12 +367,6 @@ bool cborRpcConsumeStream(Stream *stream, RemoteState *state, CborRpcWriter *wri
   {
     uint8_t byte = (uint8_t)stream->read();
 
-    if (byte == CBOR_RPC_SWITCH && state->rpcExpected == 0 && state->rpcHeaderRead == 0)
-    {
-      state->rpcRead = 0;
-      continue;
-    }
-
     if (state->rpcExpected == 0)
     {
       state->rpcHeader[state->rpcHeaderRead++] = byte;
@@ -381,12 +407,17 @@ bool cborRpcConsumeStream(Stream *stream, RemoteState *state, CborRpcWriter *wri
 
 bool cborRpcSendStatsEvent(CborRpcWriter *writer, RemoteState *state)
 {
-  uint8_t buffer[1024];
+  // Use persistent encode buffer for frequently-sent stats events
+  const size_t bufSize = 1024;
+  uint8_t *buffer = rpcEnsureEncodeBuffer(state, bufSize);
+  if (!buffer)
+    return false;
+
   CborEncoder encoder;
   CborEncoder map;
   CborEncoder paramsMap;
 
-  cbor_encoder_init(&encoder, buffer, sizeof(buffer), 0);
+  cbor_encoder_init(&encoder, buffer, bufSize, 0);
   cbor_encoder_create_map(&encoder, &map, 4);
 
   cbor_encode_text_stringz(&map, "type");
@@ -598,25 +629,10 @@ bool cborRpcHandleFrame(const uint8_t *frame, size_t len, CborRpcWriter *writer,
     return true;
   }
 
-  if (strcmp(method, "log.get") == 0)
-  {
-    if (hasId)
-      cborRpcSendBoolResult(writer, id, "enabled", state->rpcEvents);
-    return true;
-  }
-
   if (strcmp(method, "capabilities.get") == 0)
   {
     if (hasId)
       cborRpcSendCapabilitiesResult(writer, id);
-    return true;
-  }
-
-  if (strcmp(method, "log.toggle") == 0)
-  {
-    state->rpcEvents = !state->rpcEvents;
-    if (hasId)
-      cborRpcSendBoolResult(writer, id, "enabled", state->rpcEvents);
     return true;
   }
 
@@ -918,8 +934,9 @@ bool cborRpcHandleFrame(const uint8_t *frame, size_t len, CborRpcWriter *writer,
     if (!hasId)
       return true;
 
+    // Use persistent encode buffer for large settings response
     size_t bufSize = 4096;
-    uint8_t *buffer = (uint8_t *)ps_malloc(bufSize);
+    uint8_t *buffer = rpcEnsureEncodeBuffer(state, bufSize);
     if (!buffer)
       return cborRpcSendError(writer, id, -32603, "out of memory");
 
@@ -1137,9 +1154,7 @@ bool cborRpcHandleFrame(const uint8_t *frame, size_t len, CborRpcWriter *writer,
     cbor_encoder_close_container(&encoder, &map);
 
     size_t frameLen = cbor_encoder_get_buffer_size(&encoder, buffer);
-    bool ok = cborRpcSendFrame(writer, buffer, frameLen);
-    free(buffer);
-    return ok;
+    return cborRpcSendFrame(writer, buffer, frameLen);
   }
 
   // --- squelch.get / squelch.set ---

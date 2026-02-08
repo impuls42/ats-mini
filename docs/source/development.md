@@ -5,7 +5,7 @@
 
 ## Video tutorial
 
-A short video tutorial on how to build a custom firmware version ([YouTube mirror](https://youtu.be/WrPj2_DdfjI)):
+A short video tutorial on how to build a custom firmware version:
 
 <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/WrPj2_DdfjI?si=AYKVhxSiQ_WQ-n9V" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 

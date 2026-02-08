@@ -18,7 +18,7 @@ To keep changes reviewable and reproducible, please use the Make targets below a
 	- Build: `LOGFILE=logs/build.log make build`
 	- Upload: `PORT=/dev/cu.usbmodem1101 LOGFILE=logs/upload.log make upload`
 
-	Optional: install RPC test dependencies with `uv sync --group rpc`.
+	Optional: install RPC test dependencies with `uv sync --group dev`.
 
 2. **Full cycle test (hardware required)**
 

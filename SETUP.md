@@ -4,7 +4,7 @@ This guide covers setting up the ATS-Mini project on your machine.
 
 ## Prerequisites
 
-- **Python** 3.12+
+- **Python** 3.11+
 - **Git**
 - **PlatformIO IDE** VS Code extension (or PlatformIO Core CLI)
 
@@ -42,7 +42,7 @@ uv sync --group dev
 
 **For RPC/SDK testing:**
 ```bash
-uv sync --group rpc
+uv sync --group test
 ```
 
 **For documentation:**

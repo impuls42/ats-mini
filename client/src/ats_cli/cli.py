@@ -34,6 +34,7 @@ class Connection:
     def radio(self) -> Radio:
         if self._radio is None:
             self._connect()
+            assert self._radio is not None
         return self._radio
 
     def _connect(self):
@@ -48,7 +49,7 @@ class Connection:
         else:
             raise click.UsageError(
                 "No transport specified. Use --port, --ws, or --ble "
-                "(or set ATSMINI_PORT / ATSMINI_WS / ATSMINI_BLE)."
+                "(or set ATSMINI_PORT / ATSMINI_WS_URL / ATSMINI_BLE)."
             )
         loop.run_until_complete(t.connect())
         self._transport = t
@@ -93,7 +94,7 @@ pass_conn = click.make_pass_decorator(Connection)
     "--port", "-p", envvar="ATSMINI_PORT", help="Serial port (e.g. /dev/ttyUSB0)"
 )
 @click.option(
-    "--ws", envvar="ATSMINI_WS", help="WebSocket URL (e.g. ws://atsmini.local/rpc)"
+    "--ws", envvar="ATSMINI_WS_URL", help="WebSocket URL (e.g. ws://atsmini.local/rpc)"
 )
 @click.option(
     "--ble",

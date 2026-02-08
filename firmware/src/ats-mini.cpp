@@ -106,7 +106,8 @@ int8_t getSerialStatus()
     return 0;
 
   // Show as connected if data received within last 3 seconds
-  if ((millis() - remoteSerialState.lastRxTime) < 3000)
+  // (lastRxTime == 0 means no data has been received yet)
+  if (remoteSerialState.lastRxTime && (millis() - remoteSerialState.lastRxTime) < 3000)
     return 1;
 
   return -1;

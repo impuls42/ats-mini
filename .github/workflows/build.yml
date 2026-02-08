@@ -71,7 +71,7 @@ jobs:
         run: |
           pip install --upgrade platformio esptool
           pio --version
-          python -m esptool --version
+          esptool version
 
       - name: Compile firmware
         run: |

@@ -192,6 +192,8 @@ def build_merged(source, target, env):
         flash_size,
         "--flash_freq",
         flash_freq,
+        "--fill-flash-size",
+        "8MB",
         "0x0",
         bootloader,
         "0x8000",

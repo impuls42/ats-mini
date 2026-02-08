@@ -28,14 +28,15 @@ void drawSaveIndicator(int x, int y)
 void drawBleIndicator(int x, int y)
 {
   int8_t status = getBleStatus();
+  bool isThemeEditorActive = switchThemeEditor();
 
   // If need to draw BLE icon...
-  if (status || switchThemeEditor())
+  if (status || isThemeEditorActive)
   {
     uint16_t color = (status > 0) ? TH.rf_icon_conn : TH.rf_icon;
 
     // For the editor, alternate between BLE states every ~8 seconds
-    if (switchThemeEditor())
+    if (isThemeEditorActive)
       color = millis() & 0x2000 ? TH.rf_icon_conn : TH.rf_icon;
 
     spr.drawLine(x + 3, y + 1, x + 3, y + 13, color);
@@ -52,14 +53,15 @@ void drawBleIndicator(int x, int y)
 void drawWiFiIndicator(int x, int y)
 {
   int8_t status = getWiFiStatus();
+  bool isThemeEditorActive = switchThemeEditor();
 
   // If need to draw WiFi icon...
-  if (status || switchThemeEditor())
+  if (status || isThemeEditorActive)
   {
     uint16_t color = (status > 0) ? TH.rf_icon_conn : TH.rf_icon;
 
     // For the editor, alternate between WiFi states every ~8 seconds
-    if (switchThemeEditor())
+    if (isThemeEditorActive)
       color = millis() & 0x2000 ? TH.rf_icon_conn : TH.rf_icon;
 
     spr.drawSmoothArc(x, 15 + y, 14, 13, 150, 210, color, TH.bg);
@@ -74,14 +76,15 @@ void drawWiFiIndicator(int x, int y)
 void drawSerialIndicator(int x, int y)
 {
   int8_t status = getSerialStatus();
+  bool isThemeEditorActive = switchThemeEditor();
 
   // If need to draw Serial icon...
-  if (status || switchThemeEditor())
+  if (status || isThemeEditorActive)
   {
     uint16_t color = (status > 0) ? TH.serial_icon_conn : TH.serial_icon;
 
     // For the editor, alternate between Serial states every ~8 seconds
-    if (switchThemeEditor())
+    if (isThemeEditorActive)
       color = millis() & 0x2000 ? TH.serial_icon_conn : TH.serial_icon;
 
     // Draw USB-style icon (rectangle with trapezoid)

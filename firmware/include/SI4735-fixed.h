@@ -1,47 +1,47 @@
 #include <SI4735.h>
 
-class SI4735_fixed: public SI4735
+class SI4735_fixed : public SI4735
 {
-  public:
-    // Fixing SI4735::getRdsPI() bug where it only returns BLOCKAL
-    uint16_t getRdsPI(void)
-    {
-      if(getRdsReceived() && getRdsNewBlockA())
-        return (currentRdsStatus.resp.BLOCKAH << 8) + currentRdsStatus.resp.BLOCKAL;
-      else
-        return 0x0000;
-    }
+public:
+  // Fixing SI4735::getRdsPI() bug where it only returns BLOCKAL
+  uint16_t getRdsPI(void)
+  {
+    if (getRdsReceived() && getRdsNewBlockA())
+      return (currentRdsStatus.resp.BLOCKAH << 8) + currentRdsStatus.resp.BLOCKAL;
+    else
+      return 0x0000;
+  }
 
-    // Fixing SI4735::getRdsProgramType() bug where it only returns three lower bits
-    uint8_t getRdsProgramTypeX(void)
-    {
-      uint16_t blockB = (currentRdsStatus.resp.BLOCKBH << 8) + currentRdsStatus.resp.BLOCKBL;
-      return (blockB >> 5) & 0x1F;
-    }
+  // Fixing SI4735::getRdsProgramType() bug where it only returns three lower bits
+  uint8_t getRdsProgramTypeX(void)
+  {
+    uint16_t blockB = (currentRdsStatus.resp.BLOCKBH << 8) + currentRdsStatus.resp.BLOCKBL;
+    return (blockB >> 5) & 0x1F;
+  }
 
-    // Fixing SI4735::getRdsText2A() which does not follow version bit
-    char *getRdsText2A(void)
-    {
-      return getRdsVersionCode()? NULL : SI4735::getRdsText2A();
-    }
+  // Fixing SI4735::getRdsText2A() which does not follow version bit
+  char *getRdsText2A(void)
+  {
+    return getRdsVersionCode() ? NULL : SI4735::getRdsText2A();
+  }
 
-    // Fixing SI4735::getRdsText2B() which does not follow version bit
-    char *getRdsText2B(void)
-    {
-      return getRdsVersionCode()? SI4735::getRdsText2B() : NULL;
-    }
+  // Fixing SI4735::getRdsText2B() which does not follow version bit
+  char *getRdsText2B(void)
+  {
+    return getRdsVersionCode() ? SI4735::getRdsText2B() : NULL;
+  }
 
-    // Only one kind of text is available
-    inline char *getRdsProgramInformation(void)
-    {
-      return getRdsVersionCode()? SI4735::getRdsText2B() : SI4735::getRdsText2A();
-    }
+  // Only one kind of text is available
+  inline char *getRdsProgramInformation(void)
+  {
+    return getRdsVersionCode() ? SI4735::getRdsText2B() : SI4735::getRdsText2A();
+  }
 
-    // Only one kind of text is available
-    inline char *getRdsStationInformation(void)
-    {
-      return getRdsVersionCode()? SI4735::getRdsText2B() : SI4735::getRdsText2A();
-    }
+  // Only one kind of text is available
+  inline char *getRdsStationInformation(void)
+  {
+    return getRdsVersionCode() ? SI4735::getRdsText2B() : SI4735::getRdsText2A();
+  }
 
   void seekStationProgress(void (*showFunc)(uint16_t f), bool (*stopSeeking)(), uint8_t up_down)
   {

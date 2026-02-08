@@ -34,6 +34,8 @@ make monitor PORT=/dev/cu.usbmodem1101
 
 ### Using PlatformIO directly
 
+`platformio.ini` lives at the repo root. No need to `cd firmware/`.
+
 ```shell
 # Build for specific environment
 pio run -e esp32s3-qspi
@@ -67,11 +69,11 @@ To set an option, use the Makefile variables or PlatformIO build flags:
 
 ```shell
 # Using Makefile
-HALF_STEP=1 make build PROFILE=esp32s3-qspi
-DEBUG_LEVEL=1 make build PROFILE=esp32s3-qspi
+make build PROFILE=esp32s3-qspi HALF_STEP=1
+make build PROFILE=esp32s3-qspi DEBUG_LEVEL=1
 
-# Using PlatformIO directly
-pio run -e esp32s3-qspi -DHALF_STEP -DDEBUG=1
+# Using environment variable
+PLATFORMIO_BUILD_FLAGS="-DHALF_STEP -DDEBUG=1" pio run -e esp32s3-qspi
 ```
 
 Build flags can also be permanently set in `platformio.ini` in the `build_flags` section.
@@ -183,8 +185,8 @@ The debug configuration is defined in `platformio.ini`:
 
 ```ini
 debug_tool = esp-builtin      # Use ESP32-S3 built-in USB-JTAG
-debug_init_break = tbreak setup  # Break at setup() function
-debug_speed = 12000           # JTAG speed in kHz
+debug_init_break =            # No initial break (attach to running code)
+debug_speed = 5000            # JTAG speed in kHz
 ```
 
 ### Troubleshooting
@@ -242,11 +244,42 @@ Send the switch byte `0x1E` to activate CBOR-RPC mode for the connection. After 
 
 When Wi-Fi is enabled, connect to `ws://atsmini.local/rpc` and send binary messages in the same length-prefixed format.
 
-### Baseline methods
+### SDK usage
 
-- `capabilities.get`
+The Python SDK is fully async. All transports extend `AsyncRpcTransport`. A high-level `Radio` class provides typed convenience methods.
+
+```python
+from ats_sdk import AsyncSerialRpc, Radio
+
+async with AsyncSerialRpc("/dev/cu.usbmodem1101") as transport:
+    await transport.switch_mode()
+    radio = Radio(transport)
+    vol = await radio.get_volume()
+    await radio.set_volume(10)
+```
+
+### Available RPC methods
+
+- `capabilities.get` / `status.get` / `settings.get`
 - `volume.set` / `volume.get`
-- `log.toggle` / `log.get`
+- `frequency.set` / `frequency.get`
+- `band.set` / `band.get`
+- `mode.set` / `mode.get`
+- `step.set` / `step.get`
+- `bandwidth.set` / `bandwidth.get`
+- `agc.set` / `agc.get`
+- `squelch.set` / `squelch.get`
+- `softmute.set` / `softmute.get`
+- `avc.set` / `avc.get`
+- `theme.set` / `theme.get`
+- `brightness.set` / `brightness.get`
+- `sleep.timeout.set` / `sleep.timeout.get`
+- `sleep.mode.set` / `sleep.mode.get`
+- `sleep.on` / `sleep.off`
+- `ble.mode.set` / `ble.mode.get`
+- `wifi.mode.set` / `wifi.mode.get`
+- `usb.mode.set` / `usb.mode.get`
+- `memory.list`
 - `events.subscribe` / `events.unsubscribe`
 - `screen.capture` (`binary` or `rle`)
 

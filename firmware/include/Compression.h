@@ -3,18 +3,18 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "Stream.h"
+#include <Stream.h>
 
 // Compression mode constants
 #define MAGIC_DELTA_RLE "DR"
-#define MAGIC_ZLIB_RAW  "ZR"
+#define MAGIC_ZLIB_RAW "ZR"
 #define COMP_HEADER_LEN 16
 
 // Flag bits for compression header
 #define COMP_FLAG_DELTA 0x01
 
 // Public API for compression modes
-void remoteCaptureDeltaRle(Stream* stream);
-void remoteCaptureZlibRaw(Stream* stream);
+void remoteCaptureDeltaRle(Stream *stream);
+void remoteCaptureZlibRaw(Stream *stream);
 
 #endif // COMPRESSION_H

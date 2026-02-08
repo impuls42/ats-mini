@@ -16,13 +16,14 @@ ATSMINI_DEBUG=1 ATSMINI_PORT=/dev/cu.usbmodem1101 pytest sdk/tests/test_rpc_seri
 
 ## What Gets Logged
 
-### SDK Level (ats_sdk.rpc)
+### SDK Level (ats_sdk)
 
-When `ATSMINI_DEBUG=1` is set, the SDK logs:
+When `ATSMINI_DEBUG=1` is set, the SDK logs per-transport (e.g. `ats_sdk.AsyncSerialRpc`, `ats_sdk.AsyncBleRpc`):
 
 **Connection Events:**
-- Serial port opening/closing
-- DTR/RTS signal states
+- Serial port opening/closing, DTR/RTS signal states
+- BLE device discovery and connection
+- WebSocket connection status
 - Input buffer flushes
 - CBOR-RPC mode activation
 
@@ -34,9 +35,8 @@ When `ATSMINI_DEBUG=1` is set, the SDK logs:
 **Timing & Diagnostics:**
 - Message timeouts with byte counts
 - Skipped events while waiting for responses
-- WebSocket connection status
 
-### Test Level (test.rpc_serial)
+### Test Level (test)
 
 Test logs show:
 - Test start markers (`=== Starting test_name ===`)
@@ -47,16 +47,16 @@ Test logs show:
 ## Example Output
 
 ```
-23:15:42.123 [ats_sdk] INFO: SerialRpcClient connected to /dev/cu.usbmodem1101
-23:15:42.234 [ats_sdk] DEBUG: Switching to CBOR-RPC mode (sending 0x1E)
-23:15:42.345 [ats_sdk] INFO: CBOR-RPC mode activated
-23:15:42.456 [test.rpc_serial] INFO: === Starting test_volume_set ===
-23:15:42.567 [ats_sdk] DEBUG: → REQUEST id=1 method=volume.set params={'value': 10} (42 bytes)
-23:15:42.678 [ats_sdk] DEBUG: Reading message header (timeout=5.0s)...
-23:15:42.789 [ats_sdk] DEBUG: Message length: 38 bytes
-23:15:42.890 [ats_sdk] DEBUG: ← RESPONSE id=1 result={'volume': 10} error=None
-23:15:42.901 [test.rpc_serial] INFO: ✓ test_volume_set passed
-23:15:42.912 [ats_sdk] INFO: SerialRpcClient disconnected
+23:15:42.123 [ats_sdk.AsyncSerialRpc] INFO: AsyncSerialRpc connected to /dev/cu.usbmodem1101
+23:15:42.234 [ats_sdk.AsyncSerialRpc] DEBUG: Switching to CBOR-RPC mode (sending 0x1E)
+23:15:42.345 [ats_sdk.AsyncSerialRpc] INFO: CBOR-RPC mode activated
+23:15:42.456 [test] INFO: === Starting test_volume_set ===
+23:15:42.567 [ats_sdk.AsyncSerialRpc] DEBUG: → REQUEST id=1 method=volume.set params={'value': 10} (42 bytes)
+23:15:42.678 [ats_sdk.AsyncSerialRpc] DEBUG: Waiting for response to request id=1 (timeout=5.0s)
+23:15:42.789 [ats_sdk.AsyncSerialRpc] DEBUG: Message length: 38 bytes
+23:15:42.890 [ats_sdk.AsyncSerialRpc] DEBUG: ← RESPONSE id=1 result={'volume': 10} error=None
+23:15:42.901 [test] INFO: ✓ test_volume_set passed
+23:15:42.912 [ats_sdk.AsyncSerialRpc] INFO: AsyncSerialRpc disconnected
 ```
 
 ## Detecting Device Resets
@@ -76,12 +76,9 @@ If you DON'T see these, the device is not resetting - only the RPC state is bein
 The SDK uses Python's standard `logging` module. When using the SDK outside of pytest, you need to configure handlers yourself:
 
 ```python
+import asyncio
 import logging
-import os
-from ats_sdk.rpc import SerialRpcClient
-
-# Method 1: Use ATSMINI_DEBUG environment variable
-os.environ["ATSMINI_DEBUG"] = "1"
+from ats_sdk import AsyncSerialRpc, Radio
 
 # Configure logging output (needed when NOT using pytest)
 logging.basicConfig(
@@ -90,15 +87,20 @@ logging.basicConfig(
     datefmt="%H:%M:%S"
 )
 
-# Use the client - logs will appear automatically
-client = SerialRpcClient("/dev/cu.usbmodem1101")
+async def main():
+    async with AsyncSerialRpc("/dev/cu.usbmodem1101") as transport:
+        await transport.switch_mode()
+        radio = Radio(transport)
+        vol = await radio.get_volume()
+        print(f"Volume: {vol}")
+
+asyncio.run(main())
 ```
 
 **Or configure just the SDK logger:**
 
 ```python
 import logging
-from ats_sdk.rpc import SerialRpcClient
 
 # Setup handler for ats_sdk logger
 logger = logging.getLogger("ats_sdk")
@@ -110,22 +112,20 @@ handler.setFormatter(logging.Formatter(
     datefmt="%H:%M:%S"
 ))
 logger.addHandler(handler)
-
-# Use the client
-client = SerialRpcClient("/dev/cu.usbmodem1101")
-# ... logs will appear automatically
 ```
 
-**Note:** When running under pytest, handlers are configured automatically by pytest's `log_cli` feature - you don't need to add them yourself.
+**Note:** When running under pytest, handlers are configured automatically by pytest's `log_cli` feature - you don't need to add them yourself. The `ATSMINI_DEBUG=1` env var enables debug-level output automatically via `sdk/tests/conftest.py`.
 
 ### Custom Test Logging
 
 ```python
 import logging
+import pytest
 
 log = logging.getLogger("test.my_test")
 
-def test_my_feature():
+@pytest.mark.asyncio
+async def test_my_feature():
     log.info("Starting my test")
     # ... test code
     log.debug("Intermediate step completed")

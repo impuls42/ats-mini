@@ -42,8 +42,10 @@ class AsyncSerialRpc(AsyncRpcTransport):
 
         # Flush any pending data
         async with self._lock:
-            flushed = await asyncio.to_thread(lambda: self._serial.in_waiting)
-            await asyncio.to_thread(self._serial.reset_input_buffer)
+            ser = self._serial
+            assert ser is not None
+            flushed = await asyncio.to_thread(lambda: ser.in_waiting)  # type: ignore[union-attr]
+            await asyncio.to_thread(ser.reset_input_buffer)
             if flushed > 0:
                 self.logger.debug(f"Flushed {flushed} bytes from input buffer")
 
@@ -80,10 +82,12 @@ class AsyncSerialRpc(AsyncRpcTransport):
 
         # Clear any leftover data from the input buffer (could be text mode data)
         async with self._lock:
-            pending = await asyncio.to_thread(lambda: self._serial.in_waiting)
+            ser = self._serial
+            assert ser is not None
+            pending = await asyncio.to_thread(lambda: ser.in_waiting)  # type: ignore[union-attr]
             if pending > 0:
                 self.logger.debug(f"Clearing {pending} bytes from input buffer after mode switch")
-                await asyncio.to_thread(self._serial.reset_input_buffer)
+                await asyncio.to_thread(ser.reset_input_buffer)
 
         self.logger.info("CBOR-RPC mode activated")
 
@@ -115,9 +119,11 @@ class AsyncSerialRpc(AsyncRpcTransport):
             if header[0] >= 0xa0:  # CBOR map/array markers
                 self.logger.error("Header looks like CBOR data - firmware may not be sending frame headers")
             async with self._lock:
-                pending = await asyncio.to_thread(lambda: self._serial.in_waiting)
+                ser = self._serial
+                assert ser is not None
+                pending = await asyncio.to_thread(lambda: ser.in_waiting)  # type: ignore[union-attr]
                 self.logger.error(f"Flushing {pending} bytes from serial buffer")
-                await asyncio.to_thread(self._serial.reset_input_buffer)
+                await asyncio.to_thread(ser.reset_input_buffer)
             raise ValueError(f"Invalid frame length: {length} bytes - stream may be out of sync")
 
         self.logger.debug(f"Message length: {length} bytes")
@@ -128,7 +134,9 @@ class AsyncSerialRpc(AsyncRpcTransport):
         except TimeoutError as e:
             self.logger.error(f"Timeout reading payload: expected {length} bytes")
             async with self._lock:
-                pending = await asyncio.to_thread(lambda: self._serial.in_waiting)
+                ser = self._serial
+                assert ser is not None
+                pending = await asyncio.to_thread(lambda: ser.in_waiting)  # type: ignore[union-attr]
                 self.logger.error(f"Only {pending} bytes available in buffer")
             raise
 
@@ -147,13 +155,17 @@ class AsyncSerialRpc(AsyncRpcTransport):
 
             # Check if data is available before attempting read
             async with self._lock:
-                available = await asyncio.to_thread(lambda: self._serial.in_waiting)
+                ser = self._serial
+                assert ser is not None
+                available = await asyncio.to_thread(lambda: ser.in_waiting)  # type: ignore[union-attr]
 
             if available > 0:
                 # Read available data (up to what we need)
                 to_read = min(available, size - len(data))
                 async with self._lock:
-                    chunk = await asyncio.to_thread(self._serial.read, to_read)
+                    ser = self._serial
+                    assert ser is not None
+                    chunk = await asyncio.to_thread(ser.read, to_read)
 
                 if chunk:
                     data.extend(chunk)

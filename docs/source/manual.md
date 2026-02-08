@@ -247,4 +247,3 @@ To capture the **binary** BMP stream:
 ```shell
 echo -n c | socat stdio /dev/cu.usbmodem14401,echo=0,raw > /tmp/screenshot.bmp
 ```
-```

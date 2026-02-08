@@ -339,22 +339,10 @@ bool diskInit(bool force)
     LittleFS.format();
   }
 
-  // Prefer current partition label (spiffs) used for LittleFS.
-  bool mounted = LittleFS.begin(false, "/littlefs", 10, "spiffs");
+  // Partition name is "littlefs" (SubType is spiffs).
+  bool mounted = LittleFS.begin(false, "/littlefs", 10, "littlefs");
 
-  // Fallback for devices upgraded via OTA that still have "littlefs" label.
-  if (!mounted)
-  {
-    mounted = LittleFS.begin(false, "/littlefs", 10, "littlefs");
-  }
-
-  // If mount failed, try formatting the preferred label first.
-  if (!mounted)
-  {
-    mounted = LittleFS.begin(true, "/littlefs", 10, "spiffs");
-  }
-
-  // Last-resort fallback: format legacy "littlefs" label if present.
+  // If mount failed, try formatting.
   if (!mounted)
   {
     mounted = LittleFS.begin(true, "/littlefs", 10, "littlefs");
@@ -363,7 +351,6 @@ bool diskInit(bool force)
   if (!mounted)
     return (false);
 
-  // Serial.println("Mounted LittleFS!");
   return (true);
 }
 

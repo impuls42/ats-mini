@@ -48,7 +48,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --extra docs
+          uv sync --group docs
 
       - name: Compile the unreleased changelog
         run: |

@@ -12,6 +12,7 @@
 
 // Flag bits for compression header
 #define COMP_FLAG_DELTA 0x01
+#define COMP_FLAG_ERROR 0x80
 
 // Public API for compression modes
 void remoteCaptureDeltaRle(Stream *stream);

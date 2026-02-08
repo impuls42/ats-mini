@@ -240,6 +240,7 @@ A quick one-liner for macOS and Linux (change the `/dev/cu.usbmodem14401` serial
 
 ```shell
 echo -n C | socat stdio /dev/cu.usbmodem14401,echo=0,raw | xxd -r -p > /tmp/screenshot.bmp
+```
 
 To capture the **binary** BMP stream:
 

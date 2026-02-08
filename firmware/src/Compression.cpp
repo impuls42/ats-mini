@@ -311,10 +311,8 @@ void remoteCaptureZlibRaw(Stream *stream)
   if (!raw)
   {
     // PSRAM allocation failed - can't compress
-    // Send error header
-    stream->write((uint8_t)'E');
-    stream->write((uint8_t)'R');
-    stream->write((uint8_t)'R');
+    // Send error header with zero payload
+    writeHeaderCompressed(stream, MAGIC_ZLIB_RAW, COMP_FLAG_ERROR, width, height, rawSize, 0);
     return;
   }
 
@@ -351,10 +349,8 @@ void remoteCaptureZlibRaw(Stream *stream)
     // Compression failed or produced invalid output, send error
     if (compressed)
       free(compressed);
-    // Send error header
-    stream->write((uint8_t)'E');
-    stream->write((uint8_t)'R');
-    stream->write((uint8_t)'R');
+    // Send error header with zero payload
+    writeHeaderCompressed(stream, MAGIC_ZLIB_RAW, COMP_FLAG_ERROR, width, height, rawSize, 0);
   }
 
   delay(200);

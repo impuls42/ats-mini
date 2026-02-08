@@ -38,7 +38,7 @@ Each transport implements the `CborRpcWriter` interface with its own `send_frame
 ### Message Structure
 
 #### Request
-```cbor
+```json
 {
   "method": "method.name",
   "id": 123,           // Optional request ID for responses
@@ -49,7 +49,7 @@ Each transport implements the `CborRpcWriter` interface with its own `send_frame
 ```
 
 #### Response
-```cbor
+```json
 {
   "id": 123,           // Request ID
   "result": {          // Method result data
@@ -59,7 +59,7 @@ Each transport implements the `CborRpcWriter` interface with its own `send_frame
 ```
 
 #### Error
-```cbor
+```json
 {
   "id": 123,
   "error": {
@@ -70,7 +70,7 @@ Each transport implements the `CborRpcWriter` interface with its own `send_frame
 ```
 
 #### Event
-```cbor
+```json
 {
   "type": "event",
   "event": "stats",

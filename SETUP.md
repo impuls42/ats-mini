@@ -28,21 +28,26 @@ source .venv/bin/activate      # macOS/Linux
 
 ### 3. Install Dependencies
 
+This project uses [uv](https://docs.astral.sh/uv/) for dependency management.
+
 **For firmware development only:**
 ```bash
-pip install platformio
+uv sync
 ```
 
 **For full development (firmware + SDK + client):**
 ```bash
-pip install -e ".[dev]"       # Core tools
-pip install -e sdk            # CBOR-RPC SDK
-pip install -e client         # CLI terminal
+uv sync --group dev
+```
+
+**For RPC/SDK testing:**
+```bash
+uv sync --group rpc
 ```
 
 **For documentation:**
 ```bash
-pip install -e ".[docs]"
+uv sync --group docs
 ```
 
 ### 4. Open VS Code
@@ -75,23 +80,27 @@ make upload PORT=/dev/cu.usbmodem1101
 # Or upload to custom port
 make upload PORT=/dev/ttyUSB0
 
+# Full flash (merged binary at 0x0, use after erase-flash)
+make fullflash PORT=/dev/cu.usbmodem1101
+
 # Monitor serial output
 make monitor
 
 # Clean build artifacts
 make clean
+
+# Build and upload with log capture
+LOGFILE=logs/build.log make build
 ```
 
-### Using PlatformIO CLI (from firmware/ directory)
+### Using PlatformIO CLI directly
 
 ```bash
-cd firmware
-
 # Build
 pio run -e esp32s3-ospi
 
 # Upload
-pio run -e esp32s3-ospi -t upload
+pio run -e esp32s3-ospi -t upload --upload-port /dev/cu.usbmodem1101
 
 # Monitor
 pio device monitor -p /dev/cu.usbmodem1101
@@ -105,16 +114,21 @@ pio run -t clean
 ### SDK (Communication Library)
 
 ```bash
-cd sdk
-pip install -e ".[test]"
-pytest                          # Run tests
+uv sync --group rpc
+
+# Run all integration tests (requires hardware)
+ATSMINI_PORT=/dev/cu.usbmodem1101 pytest sdk/tests/
+
+# Or use Make targets
+make test-serial ATSMINI_PORT=/dev/cu.usbmodem1101
+make test-ws
+make full-test ATSMINI_PORT=/dev/cu.usbmodem1101
 ```
 
 ### Client (CLI Terminal)
 
 ```bash
-cd client
-pip install -e .
+uv sync --group dev
 atsmini                         # Run CLI
 ```
 
@@ -123,21 +137,27 @@ atsmini                         # Run CLI
 ```
 ats-mini/
 ├── firmware/                   # ESP32-S3 PlatformIO project
-│   ├── platformio.ini         # Build configuration
-│   ├── Makefile               # Build wrapper
 │   ├── src/                   # C++ source files (.ino, .cpp)
 │   ├── include/               # Header files (.h)
 │   └── build/                 # Build artifacts
-├── sdk/                        # CBOR-RPC communication library
-│   ├── src/ats_sdk/           # SDK implementation
-│   ├── tests/                 # SDK tests
+├── sdk/                        # Async CBOR-RPC communication library
+│   ├── src/ats_sdk/
+│   │   ├── base.py            # Abstract async transport base class
+│   │   ├── radio.py           # High-level typed Radio API
+│   │   ├── framing.py         # CBOR frame encoding/decoding
+│   │   └── transports/        # Transport implementations
+│   │       ├── serial.py      # AsyncSerialRpc
+│   │       ├── websocket.py   # AsyncWebSocketRpc
+│   │       └── ble.py         # AsyncBleRpc
+│   ├── tests/                 # Integration tests (require hardware)
 │   └── pyproject.toml
-├── client/                     # CLI terminal tool
+├── client/                     # CLI terminal tool (TUI)
 │   ├── src/ats_cli/           # CLI implementation
 │   └── pyproject.toml
 ├── docs/                       # Sphinx documentation
-├── Makefile                    # Root build wrapper
-└── pyproject.toml             # Root Python config (docs, CI tools)
+├── Makefile                    # Build, upload, test targets
+├── platformio.ini              # PlatformIO build configuration
+└── pyproject.toml             # Root Python config (uv, towncrier)
 ```
 
 ## Troubleshooting

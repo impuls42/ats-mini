@@ -8,7 +8,8 @@
 #define CBOR_RPC_SWITCH 0x1E
 #define CBOR_RPC_MAX_FRAME 4096
 
-struct CborRpcWriter {
+struct CborRpcWriter
+{
   void *ctx;
   bool (*send_frame)(void *ctx, const uint8_t *data, size_t len);
 };

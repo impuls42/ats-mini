@@ -3,10 +3,10 @@
 
 #include "Common.h"
 
-#define MUTE_FORCE   1
-#define MUTE_MAIN    2
+#define MUTE_FORCE 1
+#define MUTE_MAIN 2
 #define MUTE_SQUELCH 3
-#define MUTE_TEMP    4
+#define MUTE_TEMP 4
 
 // SSB patch functions
 void loadSSB(uint8_t bandwidth, bool draw = true);

@@ -26,6 +26,7 @@ Issues = "https://github.com/esp32-si4732/ats-mini/issues"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
+packages = ["ats_sdk", "ats_sdk.transports"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -151,7 +151,7 @@ ats-mini/
 │   │       └── ble.py         # AsyncBleRpc
 │   ├── tests/                 # Integration tests (require hardware)
 │   └── pyproject.toml
-├── client/                     # CLI terminal tool (TUI)
+├── client/                     # CLI terminal tool (CLI)
 │   ├── src/ats_cli/           # CLI implementation
 │   └── pyproject.toml
 ├── docs/                       # Sphinx documentation

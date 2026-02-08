@@ -5,29 +5,31 @@ import sys
 import glob
 import serial
 
+
 def get_serial_port():
     # Check environment variables first
-    port = os.getenv('ATSMINI_PORT') or os.getenv('ESPTOOL_PORT')
+    port = os.getenv("ATSMINI_PORT") or os.getenv("ESPTOOL_PORT")
     if port:
         return port
 
     # Auto-detect: Look for the port ESP32-S3 usually shows up as on macOS
     # Prioritize cu.usbmodem for macOS as it doesn't block on DCD
-    ports = glob.glob('/dev/cu.usbmodem*')
+    ports = glob.glob("/dev/cu.usbmodem*")
     if ports:
         return ports[0]
 
     # Try Linux patterns
-    ports = glob.glob('/dev/ttyUSB*') + glob.glob('/dev/ttyACM*')
+    ports = glob.glob("/dev/ttyUSB*") + glob.glob("/dev/ttyACM*")
     if ports:
         return ports[0]
 
     # Try by-id pattern (works on Linux, including Raspberry Pi)
-    ports = glob.glob('/dev/serial/by-id/*')
+    ports = glob.glob("/dev/serial/by-id/*")
     if ports:
         return ports[0]
 
     return None
+
 
 def main():
     print("--- Wait-Reconnect Monitor ---")
@@ -37,7 +39,7 @@ def main():
     while True:
         print("Waiting for device serial port to become available...")
 
-        timeout = 30 # seconds
+        timeout = 30  # seconds
         start_time = time.time()
         port = None
 
@@ -70,7 +72,7 @@ def main():
                 ser.rts = True
                 time.sleep(0.1)
                 ser.rts = False
-                ser.dtr = True # Assert DTR to enable Serial print
+                ser.dtr = True  # Assert DTR to enable Serial print
                 first_connection = False
             else:
                 print("Connected. Resuming monitoring...")
@@ -90,11 +92,13 @@ def main():
                         line = ser.readline()
                         last_data_time = time.time()
                         try:
-                            decoded = line.decode('utf-8', errors='replace').rstrip()
+                            decoded = line.decode("utf-8", errors="replace").rstrip()
                             print(decoded)
                             if "ETS: Setup complete" in decoded:
-                                print("\nSetup complete detected. Exiting successfully.")
-                                return # Exit function/script
+                                print(
+                                    "\nSetup complete detected. Exiting successfully."
+                                )
+                                return  # Exit function/script
                         except Exception as e:
                             print(f"<Decode Error: {e}>")
                     else:
@@ -114,6 +118,7 @@ def main():
             # Assuming the user might not have pyserial installed in the default python
             print("Ensure pyserial is installed: pip install pyserial")
             sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

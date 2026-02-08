@@ -18,7 +18,6 @@ import subprocess
 import sys
 from typing import TYPE_CHECKING, Any, cast
 
-
 if TYPE_CHECKING:
     from SCons.Script import Import as SConsImport  # type: ignore[reportMissingImports]
 else:

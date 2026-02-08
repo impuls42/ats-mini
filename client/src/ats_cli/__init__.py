@@ -1,7 +1,3 @@
-"""ATS-Mini CLI Terminal Client."""
-
-from .main import main
-
-__all__ = ["main"]
+"""ATS-Mini CLI."""
 
 __version__ = "0.1.0"

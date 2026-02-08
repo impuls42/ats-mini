@@ -150,7 +150,7 @@ static bool cborRpcSendStatusResult(CborRpcWriter *writer, int64_t id)
   cbor_encode_text_stringz(&resultMap, "mode");
   cbor_encode_text_stringz(&resultMap, bandModeDesc[currentMode]);
   cbor_encode_text_stringz(&resultMap, "frequency");
-  cbor_encode_uint(&resultMap, currentFrequency);
+  cbor_encode_uint(&resultMap, freqToHz(currentFrequency, currentMode) + currentBFO);
   cbor_encode_text_stringz(&resultMap, "bfo");
   cbor_encode_int(&resultMap, currentBFO);
   cbor_encode_text_stringz(&resultMap, "volume");
@@ -439,7 +439,7 @@ bool cborRpcSendStatsEvent(CborRpcWriter *writer, RemoteState *state)
   cbor_encode_text_stringz(&paramsMap, "version");
   cbor_encode_uint(&paramsMap, VER_APP);
   cbor_encode_text_stringz(&paramsMap, "frequency");
-  cbor_encode_uint(&paramsMap, currentFrequency);
+  cbor_encode_uint(&paramsMap, freqToHz(currentFrequency, currentMode) + currentBFO);
   cbor_encode_text_stringz(&paramsMap, "bfo");
   cbor_encode_int(&paramsMap, currentBFO);
   cbor_encode_text_stringz(&paramsMap, "cal");
@@ -956,7 +956,7 @@ bool cborRpcHandleFrame(const uint8_t *frame, size_t len, CborRpcWriter *writer,
     cbor_encode_text_stringz(&resultMap, "volume");
     cbor_encode_uint(&resultMap, volume);
     cbor_encode_text_stringz(&resultMap, "frequency");
-    cbor_encode_uint(&resultMap, currentFrequency);
+    cbor_encode_uint(&resultMap, freqToHz(currentFrequency, currentMode) + currentBFO);
     cbor_encode_text_stringz(&resultMap, "bfo");
     cbor_encode_int(&resultMap, currentBFO);
     cbor_encode_text_stringz(&resultMap, "squelch");
@@ -1903,7 +1903,7 @@ bool cborRpcHandleFrame(const uint8_t *frame, size_t len, CborRpcWriter *writer,
     cbor_encode_text_stringz(&map2, "result");
     cbor_encoder_create_map(&map2, &resultMap2, 2);
     cbor_encode_text_stringz(&resultMap2, "frequency");
-    cbor_encode_uint(&resultMap2, currentFrequency);
+    cbor_encode_uint(&resultMap2, freqToHz(currentFrequency, currentMode) + currentBFO);
     cbor_encode_text_stringz(&resultMap2, "bfo");
     cbor_encode_int(&resultMap2, currentBFO);
     cbor_encoder_close_container(&map2, &resultMap2);
@@ -1914,17 +1914,31 @@ bool cborRpcHandleFrame(const uint8_t *frame, size_t len, CborRpcWriter *writer,
 
   if (strcmp(method, "frequency.set") == 0)
   {
-    int64_t value = currentFrequency;
+    int64_t valueHz = freqToHz(currentFrequency, currentMode) + currentBFO;
     CborValue val;
     if (hasParams && cbor_value_is_map(&paramsVal) &&
         cbor_value_map_find_value(&paramsVal, "value", &val) == CborNoError)
-      cborRpcReadInt(&val, &value);
-    if (value < getCurrentBand()->minimumFreq || value > getCurrentBand()->maximumFreq)
+      cborRpcReadInt(&val, &valueHz);
+
+    // Convert Hz to internal units
+    uint16_t newFreq = freqFromHz((uint32_t)valueHz, currentMode);
+    int16_t newBFO = isSSB() ? (int16_t)bfoFromHz((uint32_t)valueHz) : 0;
+
+    // Validate against band range
+    if (newFreq < getCurrentBand()->minimumFreq || newFreq > getCurrentBand()->maximumFreq)
       return cborRpcSendError(writer, id, -32602, "frequency out of band range");
-    currentFrequency = (uint16_t)value;
+
+    // Apply frequency
+    currentFrequency = newFreq;
     rx.setFrequency(currentFrequency);
     getCurrentBand()->currentFreq = currentFrequency;
-    currentBFO = 0;
+
+    // Apply BFO for SSB modes
+    if (isSSB())
+      updateBFO(newBFO, false);
+    else
+      currentBFO = 0;
+
     prefsRequestSave(SAVE_CUR_BAND);
     if (hasId)
     {
@@ -1937,7 +1951,7 @@ bool cborRpcHandleFrame(const uint8_t *frame, size_t len, CborRpcWriter *writer,
       cbor_encode_text_stringz(&map2, "result");
       cbor_encoder_create_map(&map2, &resultMap2, 2);
       cbor_encode_text_stringz(&resultMap2, "frequency");
-      cbor_encode_uint(&resultMap2, currentFrequency);
+      cbor_encode_uint(&resultMap2, freqToHz(currentFrequency, currentMode) + currentBFO);
       cbor_encode_text_stringz(&resultMap2, "bfo");
       cbor_encode_int(&resultMap2, currentBFO);
       cbor_encoder_close_container(&map2, &resultMap2);

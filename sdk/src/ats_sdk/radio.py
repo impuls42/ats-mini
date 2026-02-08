@@ -72,9 +72,24 @@ class Radio:
     # -- frequency --
 
     async def get_frequency(self) -> Dict[str, Any]:
+        """Get tuning frequency in Hz.
+
+        Returns:
+            Dict with 'frequency' (Hz) and 'bfo' (Hz, sub-kHz offset for SSB).
+        """
         return await self._call("frequency.get")
 
     async def set_frequency(self, value: int) -> Dict[str, Any]:
+        """Set tuning frequency in Hz.
+
+        For SSB modes, sub-kHz precision is supported (e.g., 7200500 for 7200.5 kHz).
+
+        Args:
+            value: Frequency in Hz.
+
+        Returns:
+            Dict with 'frequency' (Hz) and 'bfo' (Hz).
+        """
         return await self._call("frequency.set", {"value": value})
 
     # -- band --

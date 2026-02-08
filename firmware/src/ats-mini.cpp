@@ -242,6 +242,10 @@ void setup()
       ;
   }
 
+  // Start in RPC mode by default
+  remoteSerialState.rpcMode = true;
+  remoteBLEState.rpcMode = true;
+
   // Check for SI4732 connected on I2C interface
   // If the SI4732 is not detected, then halt with no further processing
   rx.setI2CFastModeCustom(800000UL);

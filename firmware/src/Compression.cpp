@@ -83,43 +83,15 @@ static bool ensurePrevFrame(uint32_t count)
 // RLE (Run-Length Encoding) Functions
 // ============================================================================
 
-static uint32_t rleSizeFull(uint16_t width, uint16_t height)
-{
-  uint32_t total = 0;
-  uint16_t runVal = 0;
-  uint16_t run = 0;
-  for (int y = height - 1; y >= 0; y--)
-  {
-    for (int x = 0; x < width; x++)
-    {
-      uint16_t pixel = spr.readPixel(x, y);
-      if (run == 0)
-      {
-        runVal = pixel;
-        run = 1;
-      }
-      else if (pixel == runVal && run < 255)
-      {
-        run++;
-      }
-      else
-      {
-        total += 3;
-        runVal = pixel;
-        run = 1;
-      }
-    }
-  }
-  if (run > 0)
-    total += 3;
-  return total;
-}
-
-static void rleEncodeFull(Stream *stream, uint16_t width, uint16_t height)
+// Encode full frame into buffer (single pass), returns encoded size.
+// Returns 0 on buffer overflow.
+static uint32_t rleEncodeFullToBuffer(uint8_t *buffer, uint32_t bufferCap, uint16_t width, uint16_t height)
 {
   uint16_t runVal = 0;
   uint16_t run = 0;
   uint32_t idx = 0;
+  uint32_t outIdx = 0;
+
   for (int y = height - 1; y >= 0; y--)
   {
     for (int x = 0; x < width; x++, idx++)
@@ -127,6 +99,7 @@ static void rleEncodeFull(Stream *stream, uint16_t width, uint16_t height)
       uint16_t pixel = spr.readPixel(x, y);
       if (prevFrame)
         prevFrame[idx] = pixel;
+
       if (run == 0)
       {
         runVal = pixel;
@@ -138,66 +111,43 @@ static void rleEncodeFull(Stream *stream, uint16_t width, uint16_t height)
       }
       else
       {
-        stream->write((uint8_t)run);
-        stream->write((uint8_t)(runVal & 0xFF));
-        stream->write((uint8_t)(runVal >> 8));
+        if (outIdx + 3 > bufferCap)
+          return 0;
+        buffer[outIdx++] = (uint8_t)run;
+        buffer[outIdx++] = (uint8_t)(runVal & 0xFF);
+        buffer[outIdx++] = (uint8_t)(runVal >> 8);
         runVal = pixel;
         run = 1;
       }
     }
   }
+
   if (run > 0)
   {
-    stream->write((uint8_t)run);
-    stream->write((uint8_t)(runVal & 0xFF));
-    stream->write((uint8_t)(runVal >> 8));
+    if (outIdx + 3 > bufferCap)
+      return 0;
+    buffer[outIdx++] = (uint8_t)run;
+    buffer[outIdx++] = (uint8_t)(runVal & 0xFF);
+    buffer[outIdx++] = (uint8_t)(runVal >> 8);
   }
+
   prevFrameValid = true;
+  return outIdx;
 }
 
 // ============================================================================
 // Delta RLE (Delta-encoded Run-Length Encoding) Functions
 // ============================================================================
 
-static uint32_t deltaRleSize(uint16_t width, uint16_t height)
+// Encode delta frame into buffer (single pass), returns encoded size.
+// Returns 0 on buffer overflow or if no previous frame is available.
+static uint32_t deltaRleEncodeToBuffer(uint8_t *buffer, uint32_t bufferCap, uint16_t width, uint16_t height)
 {
   if (!prevFrameValid || !prevFrame)
     return 0;
-  uint32_t total = 0;
-  uint32_t idx = 0;
-  bool same = true;
-  uint16_t run = 0;
-  for (int y = height - 1; y >= 0; y--)
-  {
-    for (int x = 0; x < width; x++, idx++)
-    {
-      uint16_t pixel = spr.readPixel(x, y);
-      bool curSame = (pixel == prevFrame[idx]);
-      if (run == 0)
-      {
-        same = curSame;
-        run = 1;
-      }
-      else if (curSame == same && run < 127)
-      {
-        run++;
-      }
-      else
-      {
-        total += same ? 1 : (1 + run * 2);
-        same = curSame;
-        run = 1;
-      }
-    }
-  }
-  if (run > 0)
-    total += same ? 1 : (1 + run * 2);
-  return total;
-}
 
-static void deltaRleEncode(Stream *stream, uint16_t width, uint16_t height)
-{
   uint32_t idx = 0;
+  uint32_t outIdx = 0;
   bool same = true;
   uint16_t run = 0;
   uint16_t runPixels[127];
@@ -209,6 +159,7 @@ static void deltaRleEncode(Stream *stream, uint16_t width, uint16_t height)
     {
       uint16_t pixel = spr.readPixel(x, y);
       bool curSame = (pixel == prevFrame[idx]);
+
       if (run == 0)
       {
         same = curSame;
@@ -225,14 +176,18 @@ static void deltaRleEncode(Stream *stream, uint16_t width, uint16_t height)
       }
       else
       {
+        // Flush: 1 token byte + runCount * 2 pixel bytes
+        uint32_t needed = 1 + (same ? 0 : runCount * 2);
+        if (outIdx + needed > bufferCap)
+          return 0;
         uint8_t token = (same ? 0x80 : 0x00) | (uint8_t)run;
-        stream->write(token);
+        buffer[outIdx++] = token;
         if (!same)
         {
           for (uint16_t i = 0; i < runCount; i++)
           {
-            stream->write((uint8_t)(runPixels[i] & 0xFF));
-            stream->write((uint8_t)(runPixels[i] >> 8));
+            buffer[outIdx++] = (uint8_t)(runPixels[i] & 0xFF);
+            buffer[outIdx++] = (uint8_t)(runPixels[i] >> 8);
           }
         }
         same = curSame;
@@ -247,18 +202,23 @@ static void deltaRleEncode(Stream *stream, uint16_t width, uint16_t height)
 
   if (run > 0)
   {
+    uint32_t needed = 1 + (same ? 0 : runCount * 2);
+    if (outIdx + needed > bufferCap)
+      return 0;
     uint8_t token = (same ? 0x80 : 0x00) | (uint8_t)run;
-    stream->write(token);
+    buffer[outIdx++] = token;
     if (!same)
     {
       for (uint16_t i = 0; i < runCount; i++)
       {
-        stream->write((uint8_t)(runPixels[i] & 0xFF));
-        stream->write((uint8_t)(runPixels[i] >> 8));
+        buffer[outIdx++] = (uint8_t)(runPixels[i] & 0xFF);
+        buffer[outIdx++] = (uint8_t)(runPixels[i] >> 8);
       }
     }
   }
+
   prevFrameValid = true;
+  return outIdx;
 }
 
 // ============================================================================
@@ -279,22 +239,38 @@ void remoteCaptureDeltaRle(Stream *stream)
     return;
   }
 
+  // Allocate PSRAM buffer for encoded output (worst case: 3 bytes per pixel for full RLE)
+  uint32_t maxEncodedSize = count * 3;
+  uint8_t *encoded = (uint8_t *)ps_malloc(maxEncodedSize);
+  if (!encoded)
+  {
+    remoteCaptureScreen(stream, true);
+    return;
+  }
+
+  // Single-pass encode into buffer
   bool useDelta = prevFrameValid;
   uint8_t flags = useDelta ? COMP_FLAG_DELTA : 0x00;
-  uint32_t payloadSize = useDelta ? deltaRleSize(width, height) : rleSizeFull(width, height);
+  uint32_t payloadSize = useDelta ? deltaRleEncodeToBuffer(encoded, maxEncodedSize, width, height)
+                                  : rleEncodeFullToBuffer(encoded, maxEncodedSize, width, height);
 
+  // Encoding overflow or returned size exceeds buffer - fall back to binary
+  if (payloadSize == 0 || payloadSize > maxEncodedSize)
+  {
+    free(encoded);
+    prevFrameValid = false;
+    remoteCaptureScreen(stream, true);
+    return;
+  }
+
+  // Write header + payload
   writeHeaderCompressed(stream, MAGIC_DELTA_RLE, flags, width, height, rawSize, payloadSize);
+  streamWriteChunked(stream, encoded, payloadSize);
 
-  if (useDelta)
-  {
-    deltaRleEncode(stream, width, height);
-  }
-  else
-  {
-    rleEncodeFull(stream, width, height);
-  }
+  free(encoded);
 
-  delay(200);
+  // Flush stream instead of blocking delay
+  stream->flush();
 }
 
 // ============================================================================
@@ -353,5 +329,6 @@ void remoteCaptureZlibRaw(Stream *stream)
     writeHeaderCompressed(stream, MAGIC_ZLIB_RAW, COMP_FLAG_ERROR, width, height, rawSize, 0);
   }
 
-  delay(200);
+  // Flush stream instead of blocking delay
+  stream->flush();
 }

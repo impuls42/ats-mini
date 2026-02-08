@@ -69,7 +69,7 @@ class AsyncRpcTransport(ABC):
         self,
         method: str,
         params: Optional[Dict[str, Any]] = None,
-        request_id: Optional[int] = None
+        request_id: Optional[int] = None,
     ) -> int:
         """Send an RPC request and return the request ID.
 
@@ -124,7 +124,9 @@ class AsyncRpcTransport(ABC):
             message = cbor2.loads(payload)
         except Exception as e:
             self.logger.error(f"CBOR decode failed: {e}")
-            self.logger.error(f"Payload ({len(payload)} bytes): {payload[:64].hex()}...")
+            self.logger.error(
+                f"Payload ({len(payload)} bytes): {payload[:64].hex()}..."
+            )
             raise ValueError(f"Failed to decode CBOR message: {e}") from e
 
         msg_type = message.get("type", "response")
@@ -141,9 +143,7 @@ class AsyncRpcTransport(ABC):
         return message
 
     async def read_response(
-        self,
-        request_id: int,
-        timeout: float = 5.0
+        self, request_id: int, timeout: float = 5.0
     ) -> Dict[str, Any]:
         """Read response for a specific request ID, skipping any events.
 
@@ -185,9 +185,7 @@ class AsyncRpcTransport(ABC):
                     )
                 return msg
 
-        raise TimeoutError(
-            f"Timed out waiting for response to request id={request_id}"
-        )
+        raise TimeoutError(f"Timed out waiting for response to request id={request_id}")
 
     async def __aenter__(self):
         """Async context manager entry - connects to device."""

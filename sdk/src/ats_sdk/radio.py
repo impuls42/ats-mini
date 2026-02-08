@@ -20,7 +20,6 @@ class Radio:
     Usage::
 
         async with AsyncSerialRpc(port) as transport:
-            await transport.switch_mode()
             radio = Radio(transport)
             vol = await radio.get_volume()
             await radio.set_volume(10)

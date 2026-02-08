@@ -5,7 +5,6 @@
 #include <stddef.h>
 #include "Remote.h"
 
-#define CBOR_RPC_SWITCH 0x1E
 #define CBOR_RPC_MAX_FRAME 4096
 
 struct CborRpcWriter

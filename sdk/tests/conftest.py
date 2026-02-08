@@ -1,4 +1,5 @@
 """Pytest configuration for ATS-Mini SDK tests"""
+
 import asyncio
 import logging
 import os
@@ -58,7 +59,6 @@ def enable_ble_mode():
 
             logger.info(f"Enabling BLE mode on device at {port}")
             async with AsyncSerialRpc(port) as transport:
-                await transport.switch_mode()
                 await asyncio.sleep(0.5)
                 radio = Radio(transport)
 

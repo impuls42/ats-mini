@@ -6,7 +6,6 @@ from typing import Optional
 import serial
 
 from ..base import AsyncRpcTransport
-from ..framing import SWITCH_BYTE
 
 
 class AsyncSerialRpc(AsyncRpcTransport):
@@ -26,8 +25,11 @@ class AsyncSerialRpc(AsyncRpcTransport):
 
     async def connect(self) -> None:
         """Establish serial connection and configure port."""
+
         def _open_serial():
-            self.logger.debug(f"Opening serial port {self.port} at {self.baudrate} baud (timeout={self.timeout}s)")
+            self.logger.debug(
+                f"Opening serial port {self.port} at {self.baudrate} baud (timeout={self.timeout}s)"
+            )
             ser = serial.Serial(self.port, baudrate=self.baudrate, timeout=self.timeout)
             # Assert DTR to enable Serial on ESP32-S3
             ser.dtr = True
@@ -59,38 +61,6 @@ class AsyncSerialRpc(AsyncRpcTransport):
             self._serial = None
             self.logger.info("AsyncSerialRpc disconnected")
 
-    async def switch_mode(self) -> None:
-        """Switch device to CBOR-RPC mode (Serial only).
-
-        Sends the SWITCH_BYTE (0x1E) to activate CBOR-RPC protocol.
-        Required before making RPC requests.
-        """
-        if not self._serial:
-            raise ConnectionError("Not connected")
-
-        # Wait for device to finish booting before sending switch byte
-        await asyncio.sleep(0.5)
-
-        self.logger.debug(f"Switching to CBOR-RPC mode (sending 0x{SWITCH_BYTE:02X})")
-
-        async with self._lock:
-            await asyncio.to_thread(self._serial.write, bytes([SWITCH_BYTE]))
-            await asyncio.to_thread(self._serial.flush)
-
-        # Wait for mode switch to complete
-        await asyncio.sleep(0.2)
-
-        # Clear any leftover data from the input buffer (could be text mode data)
-        async with self._lock:
-            ser = self._serial
-            assert ser is not None
-            pending = await asyncio.to_thread(lambda: ser.in_waiting)  # type: ignore[union-attr]
-            if pending > 0:
-                self.logger.debug(f"Clearing {pending} bytes from input buffer after mode switch")
-                await asyncio.to_thread(ser.reset_input_buffer)
-
-        self.logger.info("CBOR-RPC mode activated")
-
     async def write_frame(self, frame: bytes) -> None:
         """Write frame to serial port."""
         if not self._serial:
@@ -114,17 +84,23 @@ class AsyncSerialRpc(AsyncRpcTransport):
         # Validate frame length (max 1MB for screen captures)
         if length > 1_000_000 or length == 0:
             # Corrupted frame - try to flush and resync
-            self.logger.error(f"Invalid frame length: {length} bytes (0x{length:08X}), header={header.hex()}")
+            self.logger.error(
+                f"Invalid frame length: {length} bytes (0x{length:08X}), header={header.hex()}"
+            )
             # Check if this looks like CBOR data instead of a frame length
-            if header[0] >= 0xa0:  # CBOR map/array markers
-                self.logger.error("Header looks like CBOR data - firmware may not be sending frame headers")
+            if header[0] >= 0xA0:  # CBOR map/array markers
+                self.logger.error(
+                    "Header looks like CBOR data - firmware may not be sending frame headers"
+                )
             async with self._lock:
                 ser = self._serial
                 assert ser is not None
                 pending = await asyncio.to_thread(lambda: ser.in_waiting)  # type: ignore[union-attr]
                 self.logger.error(f"Flushing {pending} bytes from serial buffer")
                 await asyncio.to_thread(ser.reset_input_buffer)
-            raise ValueError(f"Invalid frame length: {length} bytes - stream may be out of sync")
+            raise ValueError(
+                f"Invalid frame length: {length} bytes - stream may be out of sync"
+            )
 
         self.logger.debug(f"Message length: {length} bytes")
 

@@ -23,8 +23,6 @@ from ats_sdk import AsyncSerialRpc
 
 async def main():
     async with AsyncSerialRpc("/dev/cu.usbmodem1101") as client:
-        # Switch to CBOR-RPC mode (required for Serial and BLE)
-        await client.switch_mode()
 
         # Set volume
         req_id = await client.request("volume.set", {"value": 12})
@@ -46,7 +44,6 @@ from ats_sdk import AsyncWebSocketRpc
 
 async def main():
     async with AsyncWebSocketRpc("ws://atsmini.local/rpc") as client:
-        # No switch_mode() needed for WebSocket
 
         req_id = await client.request("capabilities.get")
         caps = await client.read_response(req_id)
@@ -64,7 +61,6 @@ async def main():
     # Connect by device name (scans for up to 10 seconds)
     async with AsyncBleRpc("ATS-Mini", scan_timeout=10.0) as client:
         # Switch to CBOR-RPC mode (required)
-        await client.switch_mode()
 
         req_id = await client.request("status.get")
         status = await client.read_response(req_id)
@@ -84,7 +80,6 @@ AsyncSerialRpc(port: str, baudrate: int = 115200, timeout: float = 1.0)
 **Methods:**
 - `async connect()` - Open serial port
 - `async close()` - Close serial port
-- `async switch_mode()` - Send 0x1E byte to activate CBOR-RPC protocol
 - `async request(method: str, params: dict = None) -> int` - Send RPC request, returns request ID
 - `async read_response(request_id: int, timeout: float = 5.0) -> dict` - Read response for specific request
 - `async read_message(timeout: float = 5.0) -> dict` - Read any message (request, response, or event)
@@ -111,7 +106,6 @@ AsyncWebSocketRpc(url: str, timeout: float = 3.0)
 - `url` - WebSocket URL (e.g., `ws://atsmini.local/rpc`)
 - `timeout` - Connection timeout in seconds (default: 3.0)
 
-**Note:** WebSocket transport does not require `switch_mode()` - it's always in CBOR-RPC mode.
 
 ### AsyncBleRpc
 
@@ -122,7 +116,6 @@ AsyncBleRpc(device_name: str = "ATS-Mini", scan_timeout: float = 10.0)
 **Methods:**
 - `async connect()` - Scan for and connect to BLE device
 - `async close()` - Disconnect from BLE device
-- `async switch_mode()` - Send 0x1E byte to activate CBOR-RPC protocol
 - `async request(method, params) -> int` - Send RPC request
 - `async read_response(request_id, timeout) -> dict` - Read response
 - `async read_message(timeout) -> dict` - Read any message
@@ -241,9 +234,6 @@ ats_sdk/
 **Frame Format:**
 - 4-byte big-endian length prefix
 - CBOR-encoded payload
-
-**Mode Switching:**
-Serial and BLE transports require sending `0x1E` (SWITCH_BYTE) to activate CBOR-RPC mode. WebSocket is always in CBOR-RPC mode.
 
 **Request Format:**
 ```python

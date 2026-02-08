@@ -16,7 +16,7 @@ This project uses [PlatformIO](https://platformio.org/) for building firmware. P
 ### Quick build commands
 
 ```shell
-# Build firmware (default profile: esp32s3-qspi from platformio.ini)
+# Build firmware (Makefile default: esp32s3-ospi)
 make build
 
 # Build for OSPI variant (8MB PSRAM)
@@ -56,7 +56,8 @@ Build profiles are defined in `platformio.ini`:
 - `esp32s3-ospi-debug` - Debug build for OPI PSRAM
 - `esp32s3-qspi-debug` - Debug build for QSPI PSRAM
 
-The default environment is set in `platformio.ini` with `default_envs = esp32s3-qspi`.
+The default environment in `platformio.ini` is `default_envs = esp32s3-qspi` (test device), while the
+Makefile defaults to `PROFILE=esp32s3-ospi` for most developers. Use `PROFILE=...` to override as needed.
 
 ## Compile-time options
 
@@ -252,7 +253,6 @@ The Python SDK is fully async. All transports extend `AsyncRpcTransport`. A high
 from ats_sdk import AsyncSerialRpc, Radio
 
 async with AsyncSerialRpc("/dev/cu.usbmodem1101") as transport:
-    await transport.switch_mode()
     radio = Radio(transport)
     vol = await radio.get_volume()
     await radio.set_volume(10)

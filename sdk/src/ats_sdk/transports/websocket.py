@@ -21,12 +21,11 @@ class AsyncWebSocketRpc(AsyncRpcTransport):
         """Establish WebSocket connection."""
         import websockets
 
-        self.logger.debug(f"Connecting to WebSocket {self.url} (timeout={self.timeout}s)")
-
-        self._ws = await websockets.connect(
-            self.url,
-            open_timeout=self.timeout
+        self.logger.debug(
+            f"Connecting to WebSocket {self.url} (timeout={self.timeout}s)"
         )
+
+        self._ws = await websockets.connect(self.url, open_timeout=self.timeout)
 
         self.logger.info(f"AsyncWebSocketRpc connected to {self.url}")
 
@@ -51,10 +50,7 @@ class AsyncWebSocketRpc(AsyncRpcTransport):
             raise ConnectionError("Not connected")
 
         try:
-            message = await asyncio.wait_for(
-                self._ws.recv(),
-                timeout=timeout
-            )
+            message = await asyncio.wait_for(self._ws.recv(), timeout=timeout)
         except asyncio.TimeoutError:
             raise TimeoutError(f"WebSocket read timeout after {timeout}s")
 

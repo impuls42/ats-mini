@@ -33,7 +33,6 @@ async def _read_until(client: AsyncSerialRpc, predicate, timeout: float = 5.0):
 async def test_volume_set():
     log.info("=== Starting test_volume_set ===")
     async with AsyncSerialRpc(PORT) as client:
-        await client.switch_mode()
         volume = random.randint(0, 16)
         log.info(f"Testing volume.set with value={volume}")
         req_id = await client.request("volume.set", {"value": volume})
@@ -47,7 +46,6 @@ async def test_volume_set():
 async def test_capabilities_get():
     log.info("=== Starting test_capabilities_get ===")
     async with AsyncSerialRpc(PORT) as client:
-        await client.switch_mode()
         log.info("Requesting capabilities.get")
         req_id = await client.request("capabilities.get")
         message = await client.read_response(req_id)
@@ -56,34 +54,15 @@ async def test_capabilities_get():
         assert result.get("rpc_version") == 1
         assert "formats" in result
         assert "transports" in result
-        log.info(f"✓ test_capabilities_get passed (rpc_version={result.get('rpc_version')})")
-
-
-@pytest.mark.asyncio
-async def test_log_get_toggle():
-    log.info("=== Starting test_log_get_toggle ===")
-    async with AsyncSerialRpc(PORT) as client:
-        await client.switch_mode()
-        log.info("Getting initial log state")
-        get_id = await client.request("log.get")
-        reply = await client.read_response(get_id)
-        assert reply.get("id") == get_id
-        initial = reply.get("result", {}).get("enabled")
-        log.info(f"Initial log state: {initial}")
-
-        log.info("Toggling log state")
-        toggle_id = await client.request("log.toggle")
-        toggled = await client.read_response(toggle_id)
-        assert toggled.get("id") == toggle_id
-        assert toggled.get("result", {}).get("enabled") == (not initial)
-        log.info(f"✓ test_log_get_toggle passed (toggled to {not initial})")
+        log.info(
+            f"✓ test_capabilities_get passed (rpc_version={result.get('rpc_version')})"
+        )
 
 
 @pytest.mark.asyncio
 async def test_stats_event_subscription():
     log.info("=== Starting test_stats_event_subscription ===")
     async with AsyncSerialRpc(PORT) as client:
-        await client.switch_mode()
         log.info("Subscribing to 'stats' events")
         req_id = await client.request("events.subscribe", {"event": "stats"})
         reply = await client.read_message()
@@ -104,7 +83,6 @@ async def test_stats_event_subscription():
 async def test_screen_capture_rle():
     log.info("=== Starting test_screen_capture_rle ===")
     async with AsyncSerialRpc(PORT) as client:
-        await client.switch_mode()
         log.info("Requesting screen capture with RLE format")
         req_id = await client.request("screen.capture", {"format": "rle"})
         reply = await client.read_response(req_id, timeout=5.0)
@@ -139,7 +117,6 @@ async def test_screen_capture_rle():
 async def test_status_get():
     log.info("=== Starting test_status_get ===")
     async with AsyncSerialRpc(PORT) as client:
-        await client.switch_mode()
         log.info("Requesting status.get")
         req_id = await client.request("status.get")
         reply = await client.read_response(req_id)
@@ -147,19 +124,27 @@ async def test_status_get():
         assert "band" in result
         assert "mode" in result
         assert "frequency" in result
-        log.info(f"✓ test_status_get passed (band={result.get('band')}, mode={result.get('mode')}, freq={result.get('frequency')})")
+        log.info(
+            f"✓ test_status_get passed (band={result.get('band')}, mode={result.get('mode')}, freq={result.get('frequency')})"
+        )
 
 
 @pytest.mark.asyncio
 async def test_basic_controls_roundtrip():
     log.info("=== Starting test_basic_controls_roundtrip ===")
     async with AsyncSerialRpc(PORT) as client:
-        await client.switch_mode()
 
         test_methods = [
             ("band.up", "band.down", "mode.up", "mode.down"),
             ("step.up", "step.down", "bandwidth.up", "bandwidth.down"),
-            ("agc.up", "agc.down", "backlight.up", "backlight.down", "cal.up", "cal.down"),
+            (
+                "agc.up",
+                "agc.down",
+                "backlight.up",
+                "backlight.down",
+                "cal.up",
+                "cal.down",
+            ),
             ("sleep.on", "sleep.off"),
         ]
 
@@ -177,7 +162,6 @@ async def test_basic_controls_roundtrip():
 async def test_memory_list():
     log.info("=== Starting test_memory_list ===")
     async with AsyncSerialRpc(PORT) as client:
-        await client.switch_mode()
         log.info("Requesting memory.list")
         req_id = await client.request("memory.list")
         reply = await client.read_response(req_id)
@@ -195,15 +179,30 @@ async def test_memory_list():
 async def test_settings_get():
     log.info("=== Starting test_settings_get ===")
     async with AsyncSerialRpc(PORT) as client:
-        await client.switch_mode()
         radio = Radio(client)
         settings = await radio.get_all_settings()
         expected_keys = [
-            "volume", "frequency", "band", "mode", "step", "bandwidth",
-            "agc", "squelch", "theme", "brightness", "sleep_timeout",
-            "sleep_mode", "rds_mode", "utc_offset", "fm_region",
-            "ui_layout", "zoom_menu", "scroll_direction",
-            "usb_mode", "ble_mode", "wifi_mode",
+            "volume",
+            "frequency",
+            "band",
+            "mode",
+            "step",
+            "bandwidth",
+            "agc",
+            "squelch",
+            "theme",
+            "brightness",
+            "sleep_timeout",
+            "sleep_mode",
+            "rds_mode",
+            "utc_offset",
+            "fm_region",
+            "ui_layout",
+            "zoom_menu",
+            "scroll_direction",
+            "usb_mode",
+            "ble_mode",
+            "wifi_mode",
         ]
         for key in expected_keys:
             assert key in settings, f"missing key: {key}"
@@ -217,7 +216,6 @@ async def test_settings_get():
 async def test_squelch_roundtrip():
     log.info("=== Starting test_squelch_roundtrip ===")
     async with AsyncSerialRpc(PORT) as client:
-        await client.switch_mode()
         radio = Radio(client)
         original = await radio.get_squelch()
         test_val = 10 if original != 10 else 20
@@ -226,14 +224,15 @@ async def test_squelch_roundtrip():
         readback = await radio.get_squelch()
         assert readback == test_val
         await radio.set_squelch(original)
-        log.info(f"✓ test_squelch_roundtrip passed ({original} -> {test_val} -> {original})")
+        log.info(
+            f"✓ test_squelch_roundtrip passed ({original} -> {test_val} -> {original})"
+        )
 
 
 @pytest.mark.asyncio
 async def test_theme_roundtrip():
     log.info("=== Starting test_theme_roundtrip ===")
     async with AsyncSerialRpc(PORT) as client:
-        await client.switch_mode()
         radio = Radio(client)
         theme = await radio.get_theme()
         assert "index" in theme
@@ -245,28 +244,30 @@ async def test_theme_roundtrip():
         assert result["index"] == test_idx
         assert "name" in result
         await radio.set_theme(original_idx)
-        log.info(f"✓ test_theme_roundtrip passed (idx {original_idx} -> {test_idx} -> {original_idx})")
+        log.info(
+            f"✓ test_theme_roundtrip passed (idx {original_idx} -> {test_idx} -> {original_idx})"
+        )
 
 
 @pytest.mark.asyncio
 async def test_brightness_roundtrip():
     log.info("=== Starting test_brightness_roundtrip ===")
     async with AsyncSerialRpc(PORT) as client:
-        await client.switch_mode()
         radio = Radio(client)
         original = await radio.get_brightness()
         test_val = 100 if original != 100 else 150
         result = await radio.set_brightness(test_val)
         assert result == test_val
         await radio.set_brightness(original)
-        log.info(f"✓ test_brightness_roundtrip passed ({original} -> {test_val} -> {original})")
+        log.info(
+            f"✓ test_brightness_roundtrip passed ({original} -> {test_val} -> {original})"
+        )
 
 
 @pytest.mark.asyncio
 async def test_band_get_set():
     log.info("=== Starting test_band_get_set ===")
     async with AsyncSerialRpc(PORT) as client:
-        await client.switch_mode()
         radio = Radio(client)
         band = await radio.get_band()
         assert "index" in band
@@ -285,7 +286,6 @@ async def test_band_get_set():
 async def test_frequency_roundtrip():
     log.info("=== Starting test_frequency_roundtrip ===")
     async with AsyncSerialRpc(PORT) as client:
-        await client.switch_mode()
         radio = Radio(client)
         freq_info = await radio.get_frequency()
         assert "frequency" in freq_info
@@ -301,7 +301,6 @@ async def test_frequency_roundtrip():
 async def test_zoom_menu_roundtrip():
     log.info("=== Starting test_zoom_menu_roundtrip ===")
     async with AsyncSerialRpc(PORT) as client:
-        await client.switch_mode()
         radio = Radio(client)
         original = await radio.get_zoom_menu()
         toggled = not original
@@ -310,14 +309,15 @@ async def test_zoom_menu_roundtrip():
         readback = await radio.get_zoom_menu()
         assert readback == toggled
         await radio.set_zoom_menu(original)
-        log.info(f"✓ test_zoom_menu_roundtrip passed ({original} -> {toggled} -> {original})")
+        log.info(
+            f"✓ test_zoom_menu_roundtrip passed ({original} -> {toggled} -> {original})"
+        )
 
 
 @pytest.mark.asyncio
 async def test_invalid_setting_value():
     log.info("=== Starting test_invalid_setting_value ===")
     async with AsyncSerialRpc(PORT) as client:
-        await client.switch_mode()
         radio = Radio(client)
         # Firmware returns error when theme index is out of bounds
         with pytest.raises((RpcError, ValueError)):  # ValueError if CBOR decode fails

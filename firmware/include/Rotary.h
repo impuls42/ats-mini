@@ -1,8 +1,9 @@
 // Rotary encoder library for Arduino.
-#include "Arduino.h"
 
 #ifndef rotary_h
 #define rotary_h
+
+#include "Arduino.h"
 
 // Enable this to emit codes twice per step
 // #define HALF_STEP

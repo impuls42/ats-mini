@@ -191,7 +191,9 @@ public:
     if (pTxCharacteristic)
     {
       // Data is sent in chunks of (MTU - 3) to account for ATT header
-      size_t chunkSize = BLEDevice::getMTU() - 3;
+      // Guard against underflow: if MTU <= 3, use safe default payload size
+      uint16_t mtu = BLEDevice::getMTU();
+      size_t chunkSize = (mtu > 3) ? (mtu - 3) : 20;
       size_t remainingByteCount = size;
       uint8_t *mutableData = (uint8_t *)data; // Cast away const for BLE API
 

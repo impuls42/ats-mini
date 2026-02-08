@@ -448,8 +448,11 @@ static bool eibiParseLine(const char *line, StationSchedule &entry)
   // Remove leading and trailing white space from name
   for (p = nameStr; *p == ' ' || *p == '\t'; ++p)
     ;
-  for (t = p + strlen(p) - 1; t >= p && (*t == ' ' || *t == '\t'); *t-- = '\0')
-    ;
+  t = p + strlen(p);
+  while (t > p && (*(t - 1) == ' ' || *(t - 1) == '\t'))
+  {
+    *(--t) = '\0';
+  }
 
   // Replace accented characters
   for (t = p; *t != '\0'; t++)

@@ -89,7 +89,6 @@ logging.basicConfig(
 
 async def main():
     async with AsyncSerialRpc("/dev/cu.usbmodem1101") as transport:
-        await transport.switch_mode()
         radio = Radio(transport)
         vol = await radio.get_volume()
         print(f"Volume: {vol}")

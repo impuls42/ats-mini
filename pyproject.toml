@@ -13,10 +13,14 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["platformio", "pytest", "pytest-asyncio", "cbor2", "pyserial", "websockets", "ats-sdk @ file:///home/zisen/Documents/ats-mini/sdk", "ats-cli @ file:///home/zisen/Documents/ats-mini/client"]
+dev = ["platformio", "pytest", "pytest-asyncio", "cbor2", "pyserial", "websockets", "ats-sdk", "ats-cli"]
 docs = ["sphinx", "furo", "myst_parser", "sphinx-autobuild"]
-test = ["pytest", "pytest-asyncio", "ats-sdk @ file:///home/zisen/Documents/ats-mini/sdk"]
-rpc = ["pytest", "cbor2", "pyserial", "websockets", "ats-sdk @ file:///home/zisen/Documents/ats-mini/sdk"]
+test = ["pytest", "pytest-asyncio", "ats-sdk"]
+rpc = ["pytest", "cbor2", "pyserial", "websockets", "ats-sdk"]
+
+[tool.uv.sources]
+ats-sdk = { path = "sdk", editable = true }
+ats-cli = { path = "client", editable = true }
 
 [tool.setuptools]
 packages = []

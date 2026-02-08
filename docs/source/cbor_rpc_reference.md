@@ -27,11 +27,6 @@ Each transport implements the `CborRpcWriter` interface with its own `send_frame
 
 ### Frame Format
 
-```
-[Switch Byte: 0x1E][Length: 4 bytes][CBOR Payload: Length bytes]
-```
-
-- **Switch Byte**: `0x1E` marks the beginning of a new frame
 - **Length**: 32-bit big-endian length of CBOR payload
 - **CBOR Payload**: JSON-like structure encoded in binary CBOR format
 

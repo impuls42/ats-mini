@@ -16,6 +16,7 @@ dependencies = [
 dev = ["platformio", "pytest", "pytest-asyncio", "cbor2", "pyserial", "websockets", "ats-sdk", "ats-cli", "black"]
 docs = ["sphinx", "furo", "myst_parser", "sphinx-autobuild"]
 test = ["pytest", "pytest-asyncio", "ats-sdk"]
+rpc = ["ats-sdk", "ats-cli"]
 
 [tool.uv.sources]
 ats-cli = {path = "client", editable = true}

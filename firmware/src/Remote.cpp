@@ -78,13 +78,6 @@ static bool cborRpcSendFrameStream(void *ctx, const uint8_t *data, size_t len)
   return true;
 }
 
-static void cborRpcResetState(RemoteState *state)
-{
-  state->rpcExpected = 0;
-  state->rpcRead = 0;
-  state->rpcHeaderRead = 0;
-}
-
 static void cborRpcTickTime(Stream *stream, RemoteState *state)
 {
   if (!state->rpcEvents)

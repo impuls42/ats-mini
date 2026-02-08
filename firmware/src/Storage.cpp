@@ -347,24 +347,20 @@ bool diskInit(bool force)
     mounted = LittleFS.begin(false, "/littlefs", 10, "spiffs");
   }
 
+  // If mount failed, try formatting the expected partition label first.
   if (!mounted)
   {
-    // Serial.println("Formatting LittleFS...");
-
-    if (!LittleFS.format())
-    {
-      // Serial.println("ERROR: format failed");
-      return (false);
-    }
-
-    // Serial.println("Re-mounting LittleFS...");
-    mounted = LittleFS.begin(false, "/littlefs", 10, "littlefs");
-    if (!mounted)
-    {
-      // Serial.println("ERROR: remount failed");
-      return (false);
-    }
+    mounted = LittleFS.begin(true, "/littlefs", 10, "littlefs");
   }
+
+  // Last-resort fallback: format legacy "spiffs" label if present.
+  if (!mounted)
+  {
+    mounted = LittleFS.begin(true, "/littlefs", 10, "spiffs");
+  }
+
+  if (!mounted)
+    return (false);
 
   // Serial.println("Mounted LittleFS!");
   return (true);

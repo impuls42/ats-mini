@@ -11,7 +11,7 @@ from ats_sdk import AsyncSerialRpc, Radio, RpcError
 log = logging.getLogger("test.rpc_serial")
 
 
-PORT = os.getenv("ATSMINI_PORT")
+PORT = os.getenv("ATSMINI_PORT", "/dev/ttyUSB0")
 pytestmark = pytest.mark.skipif(not PORT, reason="ATSMINI_PORT not set")
 
 

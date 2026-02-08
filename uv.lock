@@ -48,7 +48,7 @@ wheels = [
 [[package]]
 name = "ats-cli"
 version = "0.2.0"
-source = { directory = "client" }
+source = { editable = "client" }
 dependencies = [
     { name = "ats-sdk" },
     { name = "textual" },
@@ -107,8 +107,8 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "ats-cli", directory = "client" },
-    { name = "ats-sdk", directory = "sdk" },
+    { name = "ats-cli", editable = "client" },
+    { name = "ats-sdk", editable = "sdk" },
     { name = "cbor2" },
     { name = "platformio" },
     { name = "pyserial" },
@@ -123,14 +123,14 @@ docs = [
     { name = "sphinx-autobuild" },
 ]
 rpc = [
-    { name = "ats-sdk", directory = "sdk" },
+    { name = "ats-sdk", editable = "sdk" },
     { name = "cbor2" },
     { name = "pyserial" },
     { name = "pytest" },
     { name = "websockets" },
 ]
 test = [
-    { name = "ats-sdk", directory = "sdk" },
+    { name = "ats-sdk", editable = "sdk" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
 ]
@@ -138,7 +138,7 @@ test = [
 [[package]]
 name = "ats-sdk"
 version = "0.2.0"
-source = { directory = "sdk" }
+source = { editable = "sdk" }
 dependencies = [
     { name = "bleak" },
     { name = "cbor2" },

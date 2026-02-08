@@ -12,10 +12,10 @@ on:
       - '.github/workflows/build.yml'
       - '.pre-commit-config.yaml'
   push:
-    # tags:
-    #   - 'v*'
-    # branches:
-    #   - main
+    tags:
+      - 'v*'
+    branches:
+      - main
     paths:
       - 'firmware/**'
       - 'platformio.ini'

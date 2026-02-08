@@ -13,7 +13,7 @@ Preferences prefs;
 
 static uint32_t itIsTimeToSave = 0;  // Preferences to save, or 0 for none
 static bool savingPrefsFlag = false; // TRUE: Saving preferences
-static uint32_t storeTime = millis();
+static uint32_t storeTime = 0;       // Baseline millis() for inactivity timer; set in prefsRequestSave() on first change
 
 // To store any change to preferences, we need at least STORE_TIME
 // milliseconds of inactivity.

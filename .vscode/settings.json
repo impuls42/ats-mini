@@ -12,7 +12,7 @@
     ],
     "editor.formatOnSave": true,
     "[python]": {
-        "editor.defaultFormatter": "ms-python.python"
+        "editor.defaultFormatter": "ms-python.black-formatter"
     },
     "[cpp]": {
         "editor.defaultFormatter": "ms-vscode.cpptools"

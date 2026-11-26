@@ -13,7 +13,9 @@
 			"pytest": true,
 			"make": true,
 			"uv": true
-		}
+		},
+		"platformio-ide.useBuiltinPython": true,
+		"platformio-ide.useBuiltinPIOCore": true,
 	},
 	"tasks": {
 		"version": "2.0.0",

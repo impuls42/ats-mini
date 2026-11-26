@@ -205,6 +205,38 @@ def build_merged(source, target, env):
     ]
     return _run_esptool(args)
 
+def erase_all_flash(source, target, env):
+    board = env.BoardConfig()
+    esptool = _get_esptool_path()
+    upload_port = _get_upload_port()
+    upload_speed = _get_upload_speed()
+
+    if not upload_port:
+        message = "Upload port not set. Set ATSMINI_PORT or ESPTOOL_PORT, or configure upload_port in platformio.ini."
+        try:
+            env.Exit(1)
+        finally:
+            print(message)
+
+    args = [
+        env.subst("$PYTHONEXE"),
+        esptool,
+        "--chip",
+        board.get("build.mcu", "esp32s3"),
+    ]
+    args += [
+        "--port",
+        upload_port,
+        "--baud",
+        upload_speed,
+        "--before",
+        "default_reset",
+        "--after",
+        "no_reset",
+        "erase_flash",
+    ]
+    return _run_esptool(args)
+
 
 def upload_fullflash(source, target, env):
     board = env.BoardConfig()
@@ -242,7 +274,7 @@ def upload_fullflash(source, target, env):
         "write_flash",
     ]
     if erase_all:
-        args.append("--erase-all")
+        args.append("--erase_all")
     args += [
         "--flash_mode",
         "keep",
@@ -266,6 +298,6 @@ env.AddTarget(
 env.AddTarget(
     "fullflash",
     env.Alias("buildprog"),
-    [build_merged, upload_fullflash],
+    [build_merged, erase_all_flash, upload_fullflash],
     "Build and upload merged bin",
 )
